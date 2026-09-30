@@ -4,7 +4,7 @@
 
 Users, movies, genres, and LLM-extracted *themes* (like "redemption" or "found family") live in a Neo4j knowledge graph. The recommender matches a user's theme preferences, and every recommendation is explained by the actual graph path from the user's liked movies to the recommended one.
 
-> Status: Phase 0 (scaffolding). Sections marked "coming" are filled in as the project is built.
+> Status: Phase 1 done (MovieLens subset, train/test split, TMDB plots and posters). Sections marked "coming" are filled in as the project is built.
 
 ## Requirements
 
@@ -120,8 +120,8 @@ movie-kg-recsys/
 | Step | Command | Phase |
 |---|---|---|
 | Setup check | `python config.py` | 0 |
-| Prepare data | `python scripts/01_prepare_data.py` | 1 (coming) |
-| Fetch TMDB metadata | `python scripts/02_fetch_tmdb.py` | 1 (coming) |
+| Prepare data (downloads MovieLens if needed; about 5 s) | `python scripts/01_prepare_data.py` | 1 |
+| Fetch TMDB metadata (cached; about 7 min the first time, try `--limit 5` first) | `python scripts/02_fetch_tmdb.py` | 1 |
 | Extract themes | `python scripts/03_extract_themes.py` | 2 (coming) |
 | Normalize themes | `python scripts/04_normalize_themes.py` | 2 (coming) |
 | Build the graph | `python scripts/05_build_graph.py --mode full --wipe` | 3 (coming) |
