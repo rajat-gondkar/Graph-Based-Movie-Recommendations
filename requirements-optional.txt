@@ -1,0 +1,16 @@
+# Optional extras. Install the core first: pip install -r requirements.txt
+#
+# Your laptop (Phase 2 theme normalization; CPU is fine):
+#   pip install -r requirements-optional.txt
+# This pulls in torch (CPU/Apple-GPU build on macOS, CPU build on Windows) for sentence-transformers,
+# plus pykeen, which Phase 7 uses if you train the embeddings yourself on CPU.
+#
+# Friend's GPU laptop (Phase 7): install the CUDA build of torch first from
+# https://pytorch.org/get-started/locally/ and then pykeen. Full steps are in the README.
+
+# Theme normalization: sentence embeddings (model all-MiniLM-L6-v2)
+sentence-transformers==6.1.0
+
+# Phase 7 only: knowledge-graph embeddings (TransE)
+torch==2.14.1
+pykeen==1.11.1

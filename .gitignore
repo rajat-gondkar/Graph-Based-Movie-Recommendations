@@ -1,0 +1,24 @@
+# Secrets
+.env
+
+# Data and caches. Re-creatable, but the LLM caches cost money to rebuild: back up data/cache/ separately.
+data/
+
+# Neo4j database files (Docker volume)
+neo4j_data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+
+# Phase 7 training output on the friend's laptop
+embeddings_out/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
+
+# results/ (CSVs, charts, screenshots) stays tracked: those are the report figures.

@@ -1,0 +1,21 @@
+# Neo4j Community for the movie knowledge graph.
+#   Start:   docker compose up -d        Status: docker compose ps
+#   Stop:    docker compose stop         Start again: docker compose start
+#   Browser: http://localhost:7474       Bolt (Python driver): bolt://localhost:7687
+# NEO4J_PASSWORD comes from the .env file in this folder (8+ characters).
+# Neo4j only applies NEO4J_AUTH on the first start with an empty ./neo4j_data folder.
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: movie-kg-neo4j
+    ports:
+      - "7474:7474"   # browser UI
+      - "7687:7687"   # bolt
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:?Set NEO4J_PASSWORD in .env (8+ characters)}
+      # Memory caps for an 8 GB laptop. The graph is small, so this is plenty.
+      - NEO4J_server_memory_heap_initial__size=512M
+      - NEO4J_server_memory_heap_max__size=1G
+      - NEO4J_server_memory_pagecache_size=512M
+    volumes:
+      - ./neo4j_data:/data

@@ -1,0 +1,29 @@
+# Core dependencies. Supports Python 3.10-3.13; tested on Python 3.12.12 (macOS, Apple Silicon).
+# Install:  pip install -r requirements.txt
+# Versions are pinned so everyone gets the same behaviour. They are the newest releases that
+# still support Python 3.10 (the spec's minimum). Python 3.14 is not supported by these pins.
+
+# Data handling and baselines
+pandas==2.3.3
+numpy==2.2.6
+scipy==1.15.3
+scikit-learn==1.7.2
+
+# APIs: TMDB over HTTP, OpenRouter through the OpenAI-compatible SDK
+requests==2.34.2
+openai==3.22.1
+
+# Neo4j graph database driver
+neo4j==6.3.1
+
+# Utilities
+python-dotenv==1.2.3
+tqdm==4.70.1
+
+# Dashboard, graph view, charts
+streamlit==1.64.0
+pyvis==0.3.2
+matplotlib==3.10.9
+
+# Smoke tests (Phase 8)
+pytest==9.1.1
