@@ -95,6 +95,10 @@ SEED_THEMES = [
 # ---------------------------------------------------------------------------
 load_dotenv(ENV_PATH)
 
+# Optional reasoning effort sent to OpenRouter ("minimal", "low", "medium", "high"). Empty = don't send it.
+# Some models (e.g. google/gemini-3.5-flash-lite) always reason; "minimal" keeps that short and cheap.
+LLM_REASONING_EFFORT = os.getenv("OPENROUTER_REASONING_EFFORT", "minimal").strip()
+
 # Example values from .env.example that still need replacing.
 _PLACEHOLDERS = {
     "OPENROUTER_API_KEY": "your_openrouter_key_here",

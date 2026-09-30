@@ -1,0 +1,40 @@
+{
+  "updated_utc": "2026-09-30 23:17:00",
+  "models": [
+    "google/gemini-3.5-flash-lite"
+  ],
+  "movies_with_plot": 1295,
+  "movies_ok": 10,
+  "movies_invalid_output": 0,
+  "movies_not_done": 1285,
+  "movies_needing_retry": 0,
+  "raw_pairs": 37,
+  "distinct_raw_themes": 19,
+  "share_of_labels_from_seed_list": 1.0,
+  "themes_per_movie": {
+    "mean": 3.7,
+    "min": 3,
+    "max": 4
+  },
+  "usage_all_runs": {
+    "calls": 10,
+    "prompt_tokens": 3872,
+    "completion_tokens": 190,
+    "reasoning_tokens": 0,
+    "cost_usd": 0.001637
+  },
+  "last_run": {
+    "movies": 10,
+    "ok": 10,
+    "invalid_output": 0,
+    "api_error": 0,
+    "seconds": 15.7,
+    "usage": {
+      "calls": 10,
+      "prompt_tokens": 3872,
+      "completion_tokens": 190,
+      "reasoning_tokens": 0,
+      "cost_usd": 0.001637
+    }
+  }
+}

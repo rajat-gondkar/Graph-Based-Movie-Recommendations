@@ -122,8 +122,8 @@ movie-kg-recsys/
 | Setup check | `python config.py` | 0 |
 | Prepare data (downloads MovieLens if needed; about 5 s) | `python scripts/01_prepare_data.py` | 1 |
 | Fetch TMDB metadata (cached; about 7 min the first time, try `--limit 5` first) | `python scripts/02_fetch_tmdb.py` | 1 |
-| Extract themes | `python scripts/03_extract_themes.py` | 2 (coming) |
-| Normalize themes | `python scripts/04_normalize_themes.py` | 2 (coming) |
+| Extract themes (try `--limit 10` first; it asks y/n before spending, and resumes if stopped) | `python scripts/03_extract_themes.py` | 2 |
+| Normalize themes (install `requirements-optional.txt` for the embedding step) | `python scripts/04_normalize_themes.py` | 2 |
 | Build the graph | `python scripts/05_build_graph.py --mode full --wipe` | 3 (coming) |
 | CLI recommendations | `python -m src.recommender --user 1` | 4 (coming) |
 | Dashboard | `streamlit run app/streamlit_app.py` | 5 (coming) |
