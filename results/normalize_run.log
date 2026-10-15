@@ -1,0 +1,44 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[1/4] Loaded 5,044 (movie, theme) pairs: 1,294 movies, 146 distinct raw themes
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 8386.98it/s]
+[2/4] Mapping to seed themes: exact matches, then all-MiniLM-L6-v2 cosine similarity >= 0.75
+  50 raw themes match a seed exactly, 9 mapped by embedding, 87 kept as new themes
+    'obsessions' -> 'obsession' (similarity 0.92)
+    'mentorship' -> 'mentor and student' (similarity 0.86)
+    'corporate corruption' -> 'corruption' (similarity 0.86)
+    'ambition' -> 'artistic ambition' (similarity 0.83)
+    'immigrant' -> 'immigration' (similarity 0.82)
+    'grief and healing' -> 'loss and grief' (similarity 0.81)
+    'loyalties' -> 'loyalty' (similarity 0.80)
+    'innocence' -> 'childhood innocence' (similarity 0.80)
+[3/4] Dropping themes used by fewer than 3 movies
+  137 themes after mapping, 69 dropped as rare; 1 movie kept its most common theme so it isn't left with none
+[4/4] Writing files
+  wrote data/processed/movie_themes.csv
+  wrote data/processed/theme_mapping.csv
+  wrote results/theme_stats.json
+  wrote results/theme_frequency.png
+
+Top 20 themes (movies):
+   1. identity                    400
+   2. obsession                   307
+   3. survival                    270
+   4. underdog triumph            245
+   5. friendship                  224
+   6. family conflict             223
+   7. good vs evil                204
+   8. second chances              200
+   9. moral dilemma               181
+  10. deception                   166
+  11. loyalty                     155
+  12. justice                     153
+  13. loss and grief              146
+  14. quest                       145
+  15. redemption                  121
+  16. coming of age               120
+  17. power and politics          117
+  18. sacrifice                   107
+  19. corruption                  101
+  20. forbidden love               96
+
+Distinct themes: 68 (within the healthy range of 50-150); 1,294 movies, 3.84 themes per movie on average

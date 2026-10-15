@@ -1,0 +1,127 @@
+{
+  "used_embeddings": true,
+  "embedding_model": "all-MiniLM-L6-v2",
+  "similarity_threshold": 0.75,
+  "min_movies_per_theme": 3,
+  "movies": 1294,
+  "raw_pairs": 5044,
+  "distinct_raw_themes": 146,
+  "raw_themes_exact_seed": 50,
+  "raw_themes_mapped_by_embedding": 9,
+  "raw_themes_kept_as_new": 87,
+  "distinct_after_mapping": 137,
+  "themes_dropped_as_rare": 69,
+  "movies_rescued": 1,
+  "distinct_final_themes": 68,
+  "final_pairs": 4970,
+  "movies_with_themes": 1294,
+  "themes_per_movie": {
+    "mean": 3.84,
+    "min": 1,
+    "max": 5
+  },
+  "seed_themes_used": 50,
+  "seed_themes_unused": [],
+  "new_themes_kept": [
+    "adventure",
+    "alienation",
+    "brotherhood",
+    "bullying",
+    "destiny",
+    "duty and retirement",
+    "free will",
+    "greed",
+    "guilt",
+    "jealousy",
+    "midlife crisis",
+    "morality",
+    "motherhood",
+    "obsessive love",
+    "paranoia",
+    "rebellion",
+    "romance",
+    "vengeance"
+  ],
+  "top20": [
+    [
+      "identity",
+      400
+    ],
+    [
+      "obsession",
+      307
+    ],
+    [
+      "survival",
+      270
+    ],
+    [
+      "underdog triumph",
+      245
+    ],
+    [
+      "friendship",
+      224
+    ],
+    [
+      "family conflict",
+      223
+    ],
+    [
+      "good vs evil",
+      204
+    ],
+    [
+      "second chances",
+      200
+    ],
+    [
+      "moral dilemma",
+      181
+    ],
+    [
+      "deception",
+      166
+    ],
+    [
+      "loyalty",
+      155
+    ],
+    [
+      "justice",
+      153
+    ],
+    [
+      "loss and grief",
+      146
+    ],
+    [
+      "quest",
+      145
+    ],
+    [
+      "redemption",
+      121
+    ],
+    [
+      "coming of age",
+      120
+    ],
+    [
+      "power and politics",
+      117
+    ],
+    [
+      "sacrifice",
+      107
+    ],
+    [
+      "corruption",
+      101
+    ],
+    [
+      "forbidden love",
+      96
+    ]
+  ]
+}

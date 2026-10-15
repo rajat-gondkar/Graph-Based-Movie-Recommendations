@@ -1,40 +1,40 @@
 {
-  "updated_utc": "2026-09-30 23:17:00",
+  "updated_utc": "2026-09-30 23:59:14",
   "models": [
     "google/gemini-3.5-flash-lite"
   ],
   "movies_with_plot": 1295,
-  "movies_ok": 10,
-  "movies_invalid_output": 0,
-  "movies_not_done": 1285,
-  "movies_needing_retry": 0,
-  "raw_pairs": 37,
-  "distinct_raw_themes": 19,
-  "share_of_labels_from_seed_list": 1.0,
+  "movies_ok": 1294,
+  "movies_invalid_output": 1,
+  "movies_not_done": 0,
+  "movies_needing_retry": 1,
+  "raw_pairs": 5044,
+  "distinct_raw_themes": 146,
+  "share_of_labels_from_seed_list": 0.958,
   "themes_per_movie": {
-    "mean": 3.7,
-    "min": 3,
-    "max": 4
+    "mean": 3.9,
+    "min": 2,
+    "max": 5
   },
   "usage_all_runs": {
-    "calls": 10,
-    "prompt_tokens": 3872,
-    "completion_tokens": 190,
+    "calls": 1296,
+    "prompt_tokens": 498349,
+    "completion_tokens": 24419,
     "reasoning_tokens": 0,
-    "cost_usd": 0.001637
+    "cost_usd": 0.210552
   },
   "last_run": {
-    "movies": 10,
-    "ok": 10,
-    "invalid_output": 0,
+    "movies": 1285,
+    "ok": 1284,
+    "invalid_output": 1,
     "api_error": 0,
-    "seconds": 15.7,
+    "seconds": 1706.5,
     "usage": {
-      "calls": 10,
-      "prompt_tokens": 3872,
-      "completion_tokens": 190,
+      "calls": 1286,
+      "prompt_tokens": 494477,
+      "completion_tokens": 24229,
       "reasoning_tokens": 0,
-      "cost_usd": 0.001637
+      "cost_usd": 0.208916
     }
   }
 }
