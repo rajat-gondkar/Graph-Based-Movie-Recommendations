@@ -1,0 +1,7 @@
+[1/3] Sample: 50 users (seed 42), top-1 hybrid recommendation each (α = 0.8); graph mode: eval
+[2/3] Explanations (LLM and template)
+[3/3] Summary
+       llm: faithful 100% · genres ok 100% · names a liked title 98% · names an evidence theme 100% · mean 31.5 words
+  template: faithful 100% · genres ok 100% · names a liked title 100% · names an evidence theme 100% · mean 22.8 words
+  LLM calls 0, fallbacks 0; path coverage: sample 100%, all top-10 lists 99.97%
+  Wrote results/explanation_eval.csv and results/explanation_stats.json

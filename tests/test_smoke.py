@@ -150,3 +150,35 @@ def test_cache_key_depends_on_user_movie_and_evidence():
     assert key != explainer._cache_key("878", 1, EVIDENCE)
     assert key != explainer._cache_key("877", 2, EVIDENCE)
     assert key != explainer._cache_key("877", 1, {**EVIDENCE, "shared_genres": []})
+
+
+# --- Phase 6: metrics and the faithfulness checker --------------------------------
+from src import evaluation as ev  # noqa: E402
+
+
+def test_ranking_metrics():
+    recs, rel = [1, 2, 3, 4, 5], {2, 5, 9}
+    assert ev.precision_at_k(recs, rel, 5) == 0.4
+    assert math.isclose(ev.recall_at_k(recs, rel, 5), 2 / 3)
+    assert ev.hit_rate_at_k(recs, rel, 1) == 0.0 and ev.hit_rate_at_k(recs, rel, 2) == 1.0
+    dcg = 1 / math.log2(3) + 1 / math.log2(6)
+    ideal = 1 + 1 / math.log2(3) + 1 / math.log2(4)
+    assert math.isclose(ev.ndcg_at_k(recs, rel, 5), dcg / ideal)
+    out = ev.evaluate_lists({7: recs}, {7: rel}, 5, catalog={1, 2, 3, 4, 5, 6, 9, 10}, popularity={1: 10})
+    assert out["users"] == 1 and math.isclose(out["coverage"], 5 / 8) and out["avg_popularity"] == 2.0
+
+
+def test_mention_finder_and_faithfulness():
+    finder = ev.MentionFinder(["Unknown (2011)", "Alien", "Up", "Taken", "2012", "The Avengers (2012)", "Identity"],
+                              ["fear of the unknown", "survival", "identity", "love"], ["Sci-Fi", "Drama"])
+    found = finder.mentions("If you loved Alien and the fear of the unknown, you will love this sci-fi tale, "
+                            "taken from The Avengers (2012). Look up.")
+    assert found["titles"] == {"Alien", "The Avengers"}          # not "Unknown", "Taken", "Up", "2012"
+    assert found["themes"] == {"fear of the unknown"} and found["genres"] == {"Sci-Fi"}
+    evidence = {"recommended": {"title": "Life", "year": 2017},
+                "evidence": [{"theme": "survival", "because_you_liked": [{"title": "Alien", "rating": 5.0}]}],
+                "shared_genres": ["Sci-Fi"]}
+    good = ev.check_faithfulness("Because you liked Alien, Life shares its survival theme.", evidence, finder)
+    assert good["faithful"] and good["mentions_liked_title"] and good["mentions_evidence_theme"]
+    bad = ev.check_faithfulness("Like The Avengers, it is about identity.", evidence, finder)
+    assert not bad["faithful"] and bad["unsupported_titles"] == ["The Avengers"] and bad["unsupported_themes"] == ["identity"]

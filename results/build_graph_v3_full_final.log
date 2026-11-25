@@ -1,0 +1,39 @@
+[1/6] Reading processed files (mode: full)
+  3,843 movies, 95 themes (14,810 movie-theme pairs), 18 genres (9,464 pairs), 2,999 users, 617,003 ratings
+[2/6] Wiping the database
+[3/6] Creating constraints
+[4/6] Loading movies, genres, themes, users and ratings in batches of 1000
+[5/6] Computing ratingCount, avgRating, movieCount and idf
+[6/6] Checking the graph against the input files
+
+Nodes:
+  Genre          18
+  Meta            1
+  Movie       3,843
+  Theme          95
+  User        2,999
+Relationships:
+  HAS_GENRE     9,464
+  HAS_THEME    14,810
+  RATED       617,003
+
+Checks:
+  [ok] Movie nodes = movies with themes
+  [ok] Theme nodes = distinct themes
+  [ok] Genre nodes = distinct genres
+  [ok] User nodes = distinct rating users
+  [ok] HAS_THEME edges = movie-theme pairs
+  [ok] HAS_GENRE edges = movie-genre pairs
+  [ok] RATED edges = loaded ratings
+  [ok] Every movie has a theme
+  [ok] Every theme has an idf
+
+Most common themes (lowest idf): identity (1146 movies, idf 1.21), survival (936 movies, idf 1.41), obsession (922 movies, idf 1.43), family conflict (787 movies, idf 1.59), underdog triumph (675 movies, idf 1.74)
+Rarest themes (highest idf):     danger (1, idf 8.25), duty and retirement (1, idf 8.25), odd couple (1, idf 8.25), alien invasion (3, idf 7.16), brother-brother relationship (3, idf 7.16)
+
+Wrote results/graph_stats.json; load 29.7 s, total 35.7 s
+
+Try these in the Neo4j browser (http://localhost:7474):
+  MATCH (m:Movie)-[:HAS_THEME]->(t:Theme) RETURN m, t LIMIT 50
+  MATCH (m:Movie {title: 'The Matrix'})-[r]->(x) RETURN m, r, x
+  MATCH (t:Theme) RETURN t.name, t.movieCount, t.idf ORDER BY t.idf DESC LIMIT 10

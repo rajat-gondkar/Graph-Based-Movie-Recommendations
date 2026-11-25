@@ -1,0 +1,19 @@
+{
+  "catalog": 3671,
+  "users": 2955,
+  "relevant_items": 56299,
+  "graph_seconds": 184.4,
+  "total_seconds": 477.3,
+  "lists_with_train_items": 0,
+  "lists_outside_catalog": 0,
+  "users_with_pool_under_10": 1,
+  "fill_ins_per_alpha": {
+    "0.0": 10,
+    "0.2": 10,
+    "0.4": 10,
+    "0.6": 10,
+    "0.8": 10,
+    "1.0": 10
+  },
+  "users_needing_fill_alpha_0.8": 1
+}

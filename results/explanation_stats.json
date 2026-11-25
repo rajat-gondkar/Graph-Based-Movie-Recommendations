@@ -1,0 +1,25 @@
+{
+  "sample": 50,
+  "graph_mode": "eval",
+  "llm_calls": 0,
+  "llm_fallbacks": 0,
+  "seconds": 12.9,
+  "path_coverage_sample": 1.0,
+  "path_coverage_all_top10_alpha_0.8": 0.999662,
+  "llm": {
+    "faithful": 1.0,
+    "genres_ok": 1.0,
+    "mentions_liked_title": 0.98,
+    "mentions_evidence_theme": 1.0,
+    "both_rules": 0.98,
+    "mean_words": 31.5
+  },
+  "template": {
+    "faithful": 1.0,
+    "genres_ok": 1.0,
+    "mentions_liked_title": 1.0,
+    "mentions_evidence_theme": 1.0,
+    "both_rules": 1.0,
+    "mean_words": 22.8
+  }
+}

@@ -5,7 +5,8 @@ tests/test_pipeline.py::test_idf_and_rating_stats ✓
 tests/test_pipeline.py::test_recommendations_are_valid ✓
 tests/test_pipeline.py::test_alpha_one_ranks_by_graph_score ✓
 tests/test_pipeline.py::test_evidence_is_true_in_the_graph ✓
-tests/test_pipeline.py::test_cached_llm_explanations_need_no_calls ✓
+tests/test_pipeline.py::test_explanation_cache_avoids_repeat_calls ✓
+tests/test_pipeline.py::test_evidence_lists_up_to_the_configured_themes ✓
 tests/test_pipeline.py::test_cold_start_and_cleanup ✓
 tests/test_pipeline.py::test_profile_without_likes_gets_popular_fill ✓
 tests/test_smoke.py::test_parse_title[Matrix, The (1999)-expected0] ✓
@@ -30,9 +31,11 @@ tests/test_smoke.py::test_minmax ✓
 tests/test_smoke.py::test_rerank_formula_and_alpha ✓
 tests/test_smoke.py::test_template_text ✓
 tests/test_smoke.py::test_cache_key_depends_on_user_movie_and_evidence ✓
+tests/test_smoke.py::test_ranking_metrics ✓
+tests/test_smoke.py::test_mention_finder_and_faithfulness ✓
 tests/test_web.py::test_page_and_assets ✓
 tests/test_web.py::test_status_catalog_users ✓
 tests/test_web.py::test_validation ✓
-tests/test_web.py::test_user_recommendations_from_cache ✓
+tests/test_web.py::test_user_recommendations ✓
 tests/test_web.py::test_profile_recommendations_and_fallback ✓
-============================== 37 passed in 3.59s ==============================
+============================== 40 passed in 8.33s ==============================

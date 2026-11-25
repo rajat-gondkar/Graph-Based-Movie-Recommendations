@@ -73,8 +73,10 @@ def existing_mode(driver) -> str | None:
 
 
 def wipe(driver) -> None:
-    """Delete everything (small graph, so batching in transactions keeps memory low)."""
+    """Delete everything: relationships first, then nodes, in batches so no transaction gets too big for the
+    1 GB heap (one batch of 10,000 nodes with their ~600k relationships ran out of memory in dataset v3)."""
     with driver.session() as session:
+        session.run("MATCH ()-[r]->() CALL (r) { DELETE r } IN TRANSACTIONS OF 20000 ROWS").consume()
         session.run("MATCH (n) CALL (n) { DETACH DELETE n } IN TRANSACTIONS OF 10000 ROWS").consume()
 
 
