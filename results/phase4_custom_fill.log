@@ -1,0 +1,17 @@
+Custom profile, top themes: 
+
+Top 5 (alpha 0.8, explanations: llm):
+ 1. The Shawshank Redemption (1994)  [popular fill-in, no theme path]
+    -> *The Shawshank Redemption* is one of the most popular movies you haven't rated yet.
+ 2. Forrest Gump (1994)  [popular fill-in, no theme path]
+    -> *Forrest Gump* is one of the most popular movies you haven't rated yet.
+ 3. Pulp Fiction (1994)  [popular fill-in, no theme path]
+    -> *Pulp Fiction* is one of the most popular movies you haven't rated yet.
+ 4. The Silence of the Lambs (1991)  [popular fill-in, no theme path]
+    -> *The Silence of the Lambs* is one of the most popular movies you haven't rated yet.
+ 5. Jurassic Park (1993)  [popular fill-in, no theme path]
+    -> *Jurassic Park* is one of the most popular movies you haven't rated yet.
+
+Recommendation time 0.18 s; total 0.22 s; 5 popularity fill-in(s)
+Explanations: 0 new LLM call(s), 0 from cache, 0 template fallback(s)
+Temporary users left in the graph: 0

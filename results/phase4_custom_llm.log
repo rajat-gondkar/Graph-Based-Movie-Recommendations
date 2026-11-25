@@ -1,0 +1,27 @@
+Custom profile, top themes: friendship (5.0), identity (5.0), good vs evil (4.0), quest (3.0), coming of age (2.0)
+
+Top 10 (alpha 0.8, explanations: llm):
+ 1. The Lord of the Rings: The Return of the King (2003)  score 0.945  (graph 0.931, popularity 1.000)  themes: friendship, good vs evil, quest
+    -> If you enjoyed The Lord of the Rings: The Fellowship of the Ring, you will love The Lord of the Rings: The Return of the King. Both feature the exciting themes of friendship, good vs evil, and quest that make for a wonderful adventure.
+ 2. The Lord of the Rings (1978)  score 0.804  (graph 0.919, popularity 0.344)  themes: friendship, good vs evil, quest
+    -> If you enjoyed the friendship and good vs evil themes in Star Wars: Episode IV - A New Hope, you will love The Lord of the Rings. It captures that same spirit of adventure and fantasy.
+ 3. The Hobbit: The Battle of the Five Armies (2014)  score 0.783  (graph 0.873, popularity 0.421)  themes: friendship, good vs evil, quest
+    -> If you enjoyed the friendship and good vs evil themes in The Lord of the Rings: The Fellowship of the Ring, you will love The Hobbit: The Battle of the Five Armies. It is a fantastic adventure that continues these exciting themes.
+ 4. Monty Python and the Holy Grail (1975)  score 0.779  (graph 0.753, popularity 0.884)  themes: friendship, good vs evil, quest
+    -> If you enjoyed the quest theme in The Lord of the Rings: The Fellowship of the Ring, you will love Monty Python and the Holy Grail. It shares the adventure, fantasy, and comedy genres while exploring themes of friendship and good vs evil.
+ 5. X-Men: First Class (2011)  score 0.692  (graph 0.732, popularity 0.532)  themes: friendship, good vs evil, identity
+    -> Since you enjoyed the theme of good vs evil in Star Wars: Episode IV - A New Hope, you might like X-Men: First Class. It also features a strong focus on friendship and identity within an action-packed sci-fi adventure.
+ 6. Transformers (2007)  score 0.685  (graph 0.726, popularity 0.520)  themes: friendship, good vs evil, technology and society
+    -> If you enjoyed the friendship and good vs evil themes in Star Wars: Episode IV - A New Hope, you will love Transformers. It features the same exciting action and sci-fi thrills.
+ 7. Young Sherlock Holmes (1985)  score 0.647  (graph 0.802, popularity 0.025)  themes: friendship, good vs evil, quest
+    -> If you enjoyed the friendship in Toy Story, you will love Young Sherlock Holmes. It shares that same great theme and exciting adventure.
+ 8. The Lost Boys (1987)  score 0.636  (graph 0.711, popularity 0.336)  themes: friendship, good vs evil, found family
+    -> Since you enjoyed Toy Story, you might like The Lost Boys because they both feature the theme of friendship. It also shares the classic good vs evil theme found in Star Wars: Episode IV - A New Hope.
+ 9. The Rescuers (1977)  score 0.618  (graph 0.741, popularity 0.126)  themes: friendship, good vs evil, quest
+    -> If you enjoyed the friendship and quest in Toy Story and The Lord of the Rings: The Fellowship of the Ring, you will love The Rescuers. It features the same exciting themes of friendship, quest, and good vs evil that made those films so great.
+10. Monsters University (2013)  score 0.590  (graph 0.658, popularity 0.319)  themes: friendship, identity, coming of age
+    -> Since you enjoyed Toy Story, you might like Monsters University because they both explore the wonderful theme of friendship.
+
+Recommendation time 0.15 s; total 19.86 s; 0 popularity fill-in(s)
+Explanations: 10 new LLM call(s), 0 from cache, 0 template fallback(s)
+Temporary users left in the graph: 0

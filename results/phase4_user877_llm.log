@@ -1,0 +1,27 @@
+User 877, top themes: identity (6.5), obsession (6.0), coming of age (5.5), good vs evil (5.5), family conflict (4.5)
+
+Top 10 (alpha 0.8, explanations: llm):
+ 1. Batman Forever (1995)  score 0.908  (graph 0.920, popularity 0.861)  themes: good vs evil, revenge, obsession
+    -> If you enjoyed Inglourious Basterds, you will likely love Batman Forever because they both explore the theme of good vs evil. It is a great action and adventure choice that fits your tastes.
+ 2. The Graduate (1967)  score 0.887  (graph 0.931, popularity 0.711)  themes: coming of age, forbidden love, obsession
+    -> If you enjoyed the coming of age themes in Little Miss Sunshine, you might also like The Graduate. It shares similar themes and is a great match for fans of drama, romance, and comedy.
+ 3. Never Been Kissed (1999)  score 0.786  (graph 0.876, popularity 0.427)  themes: coming of age, forbidden love, second chances
+    -> Since you enjoyed Dirty Dancing, you might like Never Been Kissed because of the shared coming of age and forbidden love themes.
+ 4. Knocked Up (2007)  score 0.765  (graph 0.834, popularity 0.487)  themes: coming of age, good vs evil, second chances
+    -> If you enjoyed Bridget Jones's Diary, you might like Knocked Up because they both explore the coming of age theme within a comedy and romance style.
+ 5. My Big Fat Greek Wedding (2002)  score 0.758  (graph 0.779, popularity 0.671)  themes: coming of age, forbidden love, identity
+    -> If you enjoyed Little Miss Sunshine, you might like My Big Fat Greek Wedding because they both explore the coming of age theme. It is a fun romance and comedy that will feel right at home with your favorites.
+ 6. Stardust (2007)  score 0.695  (graph 0.777, popularity 0.367)  themes: coming of age, forbidden love, identity
+    -> If you enjoyed the coming of age journey in Bridget Jones's Diary, you will love Stardust. It shares that same great theme along with a fun mix of adventure, romance, comedy, and fantasy.
+ 7. The Great Gatsby (2013)  score 0.677  (graph 0.730, popularity 0.464)  themes: forbidden love, obsession, identity
+    -> If you enjoyed the drama in Moulin Rouge, you will love The Great Gatsby because it features the same themes of forbidden love and obsession.
+ 8. Great Expectations (1998)  score 0.662  (graph 0.827, popularity 0.000)  themes: coming of age, artistic ambition, second chances
+    -> If you enjoyed the coming of age themes in Little Miss Sunshine, you might like Great Expectations. It shares that same heartwarming focus while exploring themes of artistic ambition and second chances.
+ 9. Say Anything... (1989)  score 0.580  (graph 0.610, popularity 0.458)  themes: coming of age, forbidden love, family conflict
+    -> If you enjoyed the coming of age themes in Little Miss Sunshine, you will love Say Anything... for the same reasons. It also explores familiar emotional journeys that fans of those heartfelt stories appreciate.
+10. The Phantom of the Opera (2004)  score 0.562  (graph 0.684, popularity 0.073)  themes: forbidden love, good vs evil, obsession
+    -> If you enjoyed Moulin Rouge, you will likely love The Phantom of the Opera because they share the themes of forbidden love and obsession. Both films are wonderful romantic dramas filled with musical moments.
+
+Recommendation time 0.08 s; total 20.00 s; 0 popularity fill-in(s)
+Explanations: 10 new LLM call(s), 0 from cache, 0 template fallback(s)
+Temporary users left in the graph: 0
