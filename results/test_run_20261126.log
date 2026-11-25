@@ -8,7 +8,7 @@ tests/test_pipeline.py::test_evidence_is_true_in_the_graph ✓
 tests/test_pipeline.py::test_explanation_cache_avoids_repeat_calls ✓
 tests/test_pipeline.py::test_evidence_lists_up_to_the_configured_themes ✓
 tests/test_pipeline.py::test_cold_start_and_cleanup ✓
-tests/test_pipeline.py::test_profile_without_likes_gets_popular_fill ✓
+tests/test_pipeline.py::test_profile_without_likes_has_no_liked_path ✓
 tests/test_smoke.py::test_parse_title[Matrix, The (1999)-expected0] ✓
 tests/test_smoke.py::test_parse_title[Seven (a.k.a. Se7en) (1995)-expected1] ✓
 tests/test_smoke.py::test_parse_title[Toy Story (1995)-expected2] ✓
@@ -33,9 +33,10 @@ tests/test_smoke.py::test_template_text ✓
 tests/test_smoke.py::test_cache_key_depends_on_user_movie_and_evidence ✓
 tests/test_smoke.py::test_ranking_metrics ✓
 tests/test_smoke.py::test_mention_finder_and_faithfulness ✓
+tests/test_smoke.py::test_template_with_similarity_path ✓
 tests/test_web.py::test_page_and_assets ✓
 tests/test_web.py::test_status_catalog_users ✓
 tests/test_web.py::test_validation ✓
 tests/test_web.py::test_user_recommendations ✓
 tests/test_web.py::test_profile_recommendations_and_fallback ✓
-============================== 40 passed in 8.33s ==============================
+============================= 41 passed in 17.06s ==============================

@@ -33,11 +33,24 @@ ORDER BY n DESC, genre
 
 MOVIE_QUERY = "MATCH (m:Movie {movieId: $mid}) RETURN m.title AS title, m.year AS year"
 
+SIMILAR_QUERY = """
+// D50: liked movies that the recommended movie is linked to by SIMILAR edges, strongest contribution first
+MATCH (u:User {userId: $uid})-[r:RATED]->(liked:Movie)<-[s:SIMILAR]-(rec:Movie {movieId: $mid})
+WHERE r.rating >= $like_threshold
+RETURN liked.title AS title, liked.year AS year, r.rating AS rating, s.coLikes AS sharedFans
+ORDER BY s.score * (r.rating - u.meanRating) DESC, s.coLikes DESC, title
+LIMIT $max_liked
+"""
+
+SIMILAR_KEY = "liked_by_the_same_people"
+
+# Spec 9.2 prompt, extended in D50 to describe the similarity evidence.
 SYSTEM_PROMPT = """You write short, friendly explanations for movie recommendations.
 You are given STRUCTURED EVIDENCE from a knowledge graph. Write 1 to 2 sentences explaining why the movie is recommended.
+The evidence can contain shared themes (with the user's liked movies that have each theme) and "liked_by_the_same_people": movies the user liked that many of the same viewers also loved ("shared_fans" = how many viewers loved both).
 Rules:
-- Use ONLY the movie titles, themes, and genres present in the evidence. Do not add any other facts, plot details, actors, or awards.
-- Mention at least one of the user's previously liked movies by title and at least one shared theme.
+- Use ONLY the movie titles, themes, genres, and numbers present in the evidence. Do not add any other facts, plot details, actors, or awards.
+- Mention at least one of the user's previously liked movies by title, and at least one shared theme if the evidence lists any.
 - Plain, natural language. No bullet points, no markdown, no emojis."""
 
 MODES = ("llm", "template")
@@ -63,8 +76,15 @@ def evidence(user_id: int, movie_id: int) -> dict:
                                    for m in row["liked"]]}
             for row in rows
         ],
+        SIMILAR_KEY: [{"title": display_title(r["title"], r["year"]), "rating": r["rating"], "shared_fans": r["sharedFans"]}
+                      for r in _read(SIMILAR_QUERY, **params, max_liked=config.EVIDENCE_MAX_LIKED)],
         "shared_genres": [r["genre"] for r in _read(SHARED_GENRES_QUERY, **params)],
     }
+
+
+def has_path(ev: dict) -> bool:
+    """True if the recommendation is linked to the user's liked movies by a theme or a SIMILAR path."""
+    return bool(ev["evidence"] or ev.get(SIMILAR_KEY))
 
 
 # ---------------------------------------------------------------------------
@@ -76,8 +96,17 @@ def _join_titles(titles: list[str]) -> str:
 
 
 def template_text(ev: dict) -> str:
-    """Spec 9.3 template, using the strongest theme; popularity fill-ins have no theme path."""
+    """Spec 9.3 template (strongest theme), plus the strongest similarity path (D50); fill-ins have neither."""
     title = ev["recommended"]["title"]
+    similar = ev.get(SIMILAR_KEY) or []
+    if similar:
+        fans = [m["title"] for m in similar[:2]]
+        text = f"Recommended because many people who loved {_join_titles(fans)} also loved *{title}*"
+        if ev["evidence"]:
+            top = ev["evidence"][0]
+            liked = [m["title"] for m in top["because_you_liked"][:2]]
+            return text + f", and it shares the theme **{top['theme']}** with {_join_titles(liked)}."
+        return text + "."
     if not ev["evidence"]:
         if ev["shared_genres"]:
             return (f"*{title}* is a popular movie in genres you like ({', '.join(ev['shared_genres'][:2])}); "
@@ -117,7 +146,7 @@ def _explain_batch(user_id: int, movie_ids: list[int], mode: str, user_key: str,
     results, todo = [], []
     for movie_id in movie_ids:
         ev = evidence(user_id, movie_id)
-        if mode == "template" or not ev["evidence"]:  # no theme path: nothing for the LLM to ground on (D41)
+        if mode == "template" or not has_path(ev):  # no path at all: nothing for the LLM to ground on (D41)
             results.append({"text": template_text(ev), "evidence": ev, "mode": mode, "source": "template"})
             continue
         key = _cache_key(user_key, movie_id, ev)

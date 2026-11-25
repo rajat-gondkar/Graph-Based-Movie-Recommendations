@@ -150,8 +150,11 @@ def main() -> None:
     lists["Graph pure (α = 1.0)"] = by_alpha[1.0]
     lists["Graph hybrid (α = 0.8)"] = by_alpha[0.8]
     if not val and config.CF_WEIGHT > 0:
-        name = f"Graph + similar (w = {config.CF_WEIGHT}, α = {config.ALPHA_SIMILAR})"
+        name = f"Graph themes + similar (w = {config.CF_WEIGHT}, α = {config.ALPHA_SIMILAR})"
         lists[name], graph_info["fill_ins_similar"] = ranked_lists(pools, config.ALPHA_SIMILAR, config.CF_WEIGHT)
+        themed = {uid: {c["movieId"] for c in d["pool"] if c["matchedThemes"]} for uid, d in pools.items()}
+        items = [(uid, m) for uid, lst in lists[name].items() for m in lst]
+        graph_info["theme_path_share_similar"] = round(sum(m in themed[uid] for uid, m in items) / len(items), 4)
     leaks = sum(bool(set(lst) & seen.get(u, set())) for lst in lists.values() for u, lst in lst.items())
     left_catalog = sum(bool(set(l_) - catalog) for lst in lists.values() for l_ in lst.values())
     print(f"  {graph_seconds:.1f} s; lists containing a train item: {leaks}; lists with a film outside the catalogue: "

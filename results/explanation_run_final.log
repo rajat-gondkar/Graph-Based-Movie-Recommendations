@@ -1,0 +1,7 @@
+[1/3] Sample: 50 users (seed 42), top-1 recommendation each (similarity weight 0.75, α = 0.6); graph mode: eval
+[2/3] Explanations (LLM and template)
+[3/3] Summary
+       llm: faithful 100% · genres ok 100% · names a liked title 100% · names an evidence theme 100% · mean 37.7 words
+  template: faithful 100% · genres ok 100% · names a liked title 100% · names an evidence theme 100% · mean 35.7 words
+  LLM calls 50, fallbacks 0; path coverage in the sample 100% (theme path 100%, similarity path 100%); theme path in all top-10 lists: 0.9971
+  Wrote results/explanation_eval.csv and results/explanation_stats.json

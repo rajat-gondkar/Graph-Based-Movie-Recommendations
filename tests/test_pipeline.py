@@ -125,7 +125,14 @@ def test_evidence_is_true_in_the_graph(sample_users):
     for uid in sample_users[:10]:
         rec = recommender.recommend(uid, k=1)[0]
         ev = explainer.evidence(uid, rec["movieId"])
-        assert ev["evidence"], f"user {uid}: top recommendation has no theme path"
+        assert explainer.has_path(ev), f"user {uid}: top recommendation has no theme or similarity path"
+        sims = {(r["t"], r["liked"]) for r in recommender._read("""
+            MATCH (:User {userId: $u})-[r:RATED]->(l:Movie)<-[s:SIMILAR]-(:Movie {movieId: $m})
+            WHERE r.rating >= $like RETURN l.title AS liked, l.year AS y, s.coLikes AS t""",
+            u=uid, m=rec["movieId"], like=config.LIKE_THRESHOLD)}
+        for m in ev[explainer.SIMILAR_KEY]:
+            assert m["rating"] >= config.LIKE_THRESHOLD
+            assert any(m["shared_fans"] == fans and m["title"].startswith(t) for fans, t in sims)
         rec_themes = {r["t"] for r in recommender._read(
             "MATCH (:Movie {movieId: $m})-[:HAS_THEME]->(t) RETURN t.name AS t", m=rec["movieId"])}
         liked = recommender._read("""
@@ -139,7 +146,9 @@ def test_evidence_is_true_in_the_graph(sample_users):
                 assert movie["rating"] >= config.LIKE_THRESHOLD
                 assert (movie["title"], item["theme"]) in liked_pairs
         text = explainer.template_text(ev)
-        assert ev["evidence"][0]["theme"] in text and ev["recommended"]["title"] in text
+        assert ev["recommended"]["title"] in text
+        if ev["evidence"]:
+            assert ev["evidence"][0]["theme"] in text
 
 
 def test_explanation_cache_avoids_repeat_calls(sample_users, monkeypatch, tmp_path):
@@ -158,7 +167,7 @@ def test_evidence_lists_up_to_the_configured_themes(sample_users):
     for uid in sample_users[:5]:
         rec = recommender.recommend(uid, k=1)[0]
         ev = explainer.evidence(uid, rec["movieId"])
-        assert 1 <= len(ev["evidence"]) <= config.EVIDENCE_MAX_THEMES
+        assert len(ev["evidence"]) <= config.EVIDENCE_MAX_THEMES and explainer.has_path(ev)
         assert all(len(e["because_you_liked"]) <= config.EVIDENCE_MAX_LIKED for e in ev["evidence"])
         shared = {t["theme"] for t in rec["matchedThemes"]}
         assert len(ev["evidence"]) == min(len(shared), config.EVIDENCE_MAX_THEMES)
@@ -179,7 +188,16 @@ def test_cold_start_and_cleanup(driver):
     assert _temp_users() == 0                                           # deleted even after an error
 
 
-def test_profile_without_likes_gets_popular_fill(driver):
-    recs = recommender.recommend_for_ratings({1: 2.0, 260: 3.0}, k=5)
-    assert len(recs) == 5 and all(r["filled"] for r in recs)
+def test_profile_without_likes_has_no_liked_path(driver):
+    """No rating >= 4: no theme profile and no liked-film path. Since D48 the SIMILAR edges still supply
+    candidates, and their explanations fall back to the plain 'popular' sentence (D41)."""
+    ratings = {1: 2.0, 260: 3.0}
+    with recommender.temporary_user(ratings) as uid:
+        recs = recommender.recommend(uid, k=5)
+        assert len(recs) == 5 and not {r["movieId"] for r in recs} & set(ratings)
+        assert all(not r["matchedThemes"] for r in recs)
+        for r in recs:
+            ev = explainer.evidence(uid, r["movieId"])
+            assert not explainer.has_path(ev)
+            assert "popular" in explainer.template_text(ev)
     assert _temp_users() == 0

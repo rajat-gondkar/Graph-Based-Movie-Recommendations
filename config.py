@@ -64,16 +64,18 @@ RANDOM_SEED = 42
 # Recommender settings
 # ---------------------------------------------------------------------------
 LIKE_THRESHOLD = 4.0            # ratings at or above this build the user's theme profile
-ALPHA = 0.8                     # final = ALPHA * graph score + (1 - ALPHA) * popularity
+ALPHA = 0.6                     # final = ALPHA * graph score + (1 - ALPHA) * popularity (0.8 before D50; chosen on validation)
+ALPHA_THEME_ONLY = 0.8          # the theme-only hybrid reported in Phase 6
 GENRE_WEIGHT = 0.3              # weight of the genre bonus inside the graph score
 MIN_CANDIDATE_RATINGS = 5       # candidate movies need at least this many ratings
 POOL_SIZE = 100                 # theme-matched candidates fetched before re-ranking
 EVIDENCE_MAX_THEMES = 5         # shared themes shown in an explanation (3 before D45; films have at most 5)
 EVIDENCE_MAX_LIKED = 3          # liked films listed per shared theme
 SIMILAR_NEIGHBOURS = 50         # D48: SIMILAR edges per movie (nearest neighbours by rating patterns)
-CF_WEIGHT = 0.0                 # D48: share of the similarity score inside the graph score (0 = themes/genres only)
+CF_WEIGHT = 0.75                # D48/D50: share of the similarity score inside the graph score (0 = themes/genres only)
 CF_POOL_SIZE = 200              # candidates fetched through SIMILAR edges when CF_WEIGHT > 0
 ALPHA_SIMILAR = ALPHA            # alpha used with the similarity blend (set from the validation grid, D49)
+COLD_START_MEAN = 3.0           # D50: centre for temporary users' ratings (a like-only profile has no spread)
 
 # ---------------------------------------------------------------------------
 # External services

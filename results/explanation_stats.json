@@ -1,18 +1,20 @@
 {
   "sample": 50,
   "graph_mode": "eval",
-  "llm_calls": 0,
+  "llm_calls": 50,
   "llm_fallbacks": 0,
-  "seconds": 12.9,
+  "seconds": 123.1,
   "path_coverage_sample": 1.0,
-  "path_coverage_all_top10_alpha_0.8": 0.999662,
+  "theme_path_share_sample": 1.0,
+  "similar_path_share_sample": 1.0,
+  "theme_path_share_all_top10": 0.9971,
   "llm": {
     "faithful": 1.0,
     "genres_ok": 1.0,
-    "mentions_liked_title": 0.98,
+    "mentions_liked_title": 1.0,
     "mentions_evidence_theme": 1.0,
-    "both_rules": 0.98,
-    "mean_words": 31.5
+    "both_rules": 1.0,
+    "mean_words": 37.7
   },
   "template": {
     "faithful": 1.0,
@@ -20,6 +22,6 @@
     "mentions_liked_title": 1.0,
     "mentions_evidence_theme": 1.0,
     "both_rules": 1.0,
-    "mean_words": 22.8
+    "mean_words": 35.7
   }
 }

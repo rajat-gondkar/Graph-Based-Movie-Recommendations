@@ -134,6 +134,8 @@ def check_faithfulness(text: str, evidence: dict, finder: MentionFinder) -> dict
     for item in evidence["evidence"]:
         for m in item["because_you_liked"]:
             liked.add(base_title(m["title"]))
+    for m in evidence.get("liked_by_the_same_people", []):   # D50: similarity paths
+        liked.add(base_title(m["title"]))
     ev_titles |= liked
     ev_themes = {item["theme"] for item in evidence["evidence"]}
     norm_ev_titles = {normalize(t) for t in ev_titles}
@@ -144,7 +146,7 @@ def check_faithfulness(text: str, evidence: dict, finder: MentionFinder) -> dict
         "faithful": not bad_titles and not bad_themes,
         "genres_ok": not bad_genres,
         "mentions_liked_title": bool({normalize(t) for t in found["titles"]} & {normalize(t) for t in liked}),
-        "mentions_evidence_theme": bool(found["themes"] & ev_themes),
+        "mentions_evidence_theme": bool(found["themes"] & ev_themes) or not ev_themes,
         "unsupported_titles": sorted(bad_titles),
         "unsupported_themes": sorted(bad_themes),
         "unsupported_genres": sorted(bad_genres),

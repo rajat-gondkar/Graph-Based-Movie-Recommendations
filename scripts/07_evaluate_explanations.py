@@ -39,8 +39,8 @@ def main() -> None:
         raise SystemExit(f"The graph is in '{mode}' mode; run this on the eval graph, after 06_evaluate_accuracy.py.")
     users = sorted(recommender.user_ids())
     sample = sorted(random.Random(config.RANDOM_SEED).sample(users, args.sample))
-    print(f"[1/3] Sample: {len(sample)} users (seed {config.RANDOM_SEED}), top-1 hybrid recommendation each "
-          f"(α = {config.ALPHA}); graph mode: {mode}")
+    print(f"[1/3] Sample: {len(sample)} users (seed {config.RANDOM_SEED}), top-1 recommendation each "
+          f"(similarity weight {config.CF_WEIGHT}, α = {config.ALPHA}); graph mode: {mode}")
 
     recs = {u: recommender.recommend(u, k=1, alpha=config.ALPHA)[0] for u in sample}
     if not args.yes:
@@ -64,8 +64,11 @@ def main() -> None:
         tpl = explainer.explain(uid, rec["movieId"], mode="template")
         evidence = llm["evidence"]
         row = {"userId": uid, "movieId": rec["movieId"], "recommended": rec["displayTitle"],
-               "filled": rec["filled"], "has_path": bool(evidence["evidence"]),
+               "filled": rec["filled"], "has_path": explainer.has_path(evidence),
+               "has_theme_path": bool(evidence["evidence"]),
+               "has_similar_path": bool(evidence.get(explainer.SIMILAR_KEY)),
                "evidence_themes": "; ".join(e["theme"] for e in evidence["evidence"]),
+               "similar_titles": "; ".join(m["title"] for m in evidence.get(explainer.SIMILAR_KEY, [])),
                "llm_source": llm["source"]}
         for name, text in (("llm", llm["text"]), ("template", tpl["text"])):
             check = ev.check_faithfulness(text, evidence, finder)
@@ -85,12 +88,12 @@ def main() -> None:
 
     print("[3/3] Summary")
     acc = json.loads((config.RESULTS_DIR / "accuracy_stats.json").read_text())
-    fills = acc["fill_ins_per_alpha"].get("0.8", acc["fill_ins_per_alpha"].get(0.8))
-    total_items = acc["users"] * 10
     summary = {"sample": len(df), "graph_mode": mode, "llm_calls": calls, "llm_fallbacks": fallbacks,
                "seconds": round(time.time() - started, 1),
                "path_coverage_sample": float(df["has_path"].mean()),
-               "path_coverage_all_top10_alpha_0.8": round(1 - fills / total_items, 6)}
+               "theme_path_share_sample": float(df["has_theme_path"].mean()),
+               "similar_path_share_sample": float(df["has_similar_path"].mean()),
+               "theme_path_share_all_top10": acc.get("theme_path_share_similar")}
     for name in ("llm", "template"):
         summary[name] = {
             "faithful": float(df[f"{name}_faithful"].mean()),
@@ -106,8 +109,10 @@ def main() -> None:
         print(f"  {name:>8}: faithful {s['faithful']:.0%} · genres ok {s['genres_ok']:.0%} · names a liked title "
               f"{s['mentions_liked_title']:.0%} · names an evidence theme {s['mentions_evidence_theme']:.0%} · "
               f"mean {s['mean_words']} words")
-    print(f"  LLM calls {calls}, fallbacks {fallbacks}; path coverage: sample {summary['path_coverage_sample']:.0%}, "
-          f"all top-10 lists {summary['path_coverage_all_top10_alpha_0.8']:.2%}")
+    print(f"  LLM calls {calls}, fallbacks {fallbacks}; path coverage in the sample {summary['path_coverage_sample']:.0%} "
+          f"(theme path {summary['theme_path_share_sample']:.0%}, similarity path "
+          f"{summary['similar_path_share_sample']:.0%}); theme path in all top-10 lists: "
+          f"{summary['theme_path_share_all_top10']}")
     bad = df[~df["llm_faithful"] | ~df["llm_genres_ok"]]
     if len(bad):
         print("  LLM explanations flagged:")

@@ -307,11 +307,11 @@ def temporary_user(ratings: dict[int, float]):
     rows = [{"movieId": int(m), "rating": float(r)} for m, r in ratings.items()]
     with get_driver().session() as session:
         found = session.run("""
-            CREATE (u:User {userId: $uid})
+            CREATE (u:User {userId: $uid, meanRating: $mean})
             WITH u UNWIND $rows AS row
             MATCH (m:Movie {movieId: row.movieId})
             CREATE (u)-[:RATED {rating: row.rating, timestamp: timestamp() / 1000}]->(m)
-            RETURN count(*) AS n""", uid=uid, rows=rows).single()["n"]
+            RETURN count(*) AS n""", uid=uid, rows=rows, mean=config.COLD_START_MEAN).single()["n"]
     try:
         if found < len(rows):
             print(f"  Note: {len(rows) - found} of the given movies are not in the graph and were ignored.")

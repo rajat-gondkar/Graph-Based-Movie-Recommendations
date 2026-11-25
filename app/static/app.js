@@ -32,7 +32,7 @@
     users: [],
     liked: store.get("liked", []),
     k: store.get("k", 10),
-    alpha: store.get("alpha", 0.8),
+    alpha: store.get("alpha_v2", null),   // null until /api/status gives the default (D50)
     userId: store.get("userId", 92),
     view: "browse",
     browseBy: "genre",
@@ -291,7 +291,8 @@
     const tags = r.themes.map((t) => `<span class="tag">${esc(t)}</span>`).join("");
     const note = r.source === "template-fallback" ? `<p class="source">The language model was unavailable, so this uses the fixed template.</p>`
       : r.source === "template" && !r.filled ? `<p class="source">Template explanation.</p>` : "";
-    const path = r.evidence.evidence.length ? `
+    const similar = r.evidence.liked_by_the_same_people || [];
+    const path = r.evidence.evidence.length || similar.length ? `
       <button type="button" class="toggle" aria-expanded="false" data-path="${i}">Show graph path ${ICONS.chevron}</button>
       <div class="path" hidden data-path-panel="${i}"></div>` : "";
     return `
@@ -310,9 +311,10 @@
       </li>`;
   }
 
-  // Graph path: You -> films you liked -> shared themes <- recommended film
+  // Graph path: You -> films you liked -> shared themes <- recommended film,
+  // plus dashed SIMILAR links: films you liked that the same people also loved (D50)
   function pathSVG(ev) {
-    const W = 800, ROW = 40, TOP = 34;
+    const W = 800, ROW = 40, TOP = 34, LEGEND = 30;
     const liked = [];
     const edges = [];
     for (const item of ev.evidence) {
@@ -321,9 +323,12 @@
         edges.push([m.title, item.theme]);
       }
     }
+    const similar = ev.liked_by_the_same_people || [];
+    for (const m of similar) if (!liked.some((l) => l.title === m.title)) liked.push(m);
+    const fans = new Map(similar.map((m) => [m.title, m.shared_fans]));
     const themes = ev.evidence.map((e) => e.theme);
     const rows = Math.max(liked.length, themes.length, 1);
-    const H = TOP + rows * ROW + 8;
+    const H = TOP + rows * ROW + 8 + LEGEND;
     const yAt = (i, n) => TOP + (rows - n) * ROW / 2 + i * ROW + ROW / 2;
     const cut = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
     const width = (s, max) => Math.min(max, s.length * 6.6 + 24);
@@ -343,6 +348,12 @@
       ...edges.map(([m, t]) => { const a = pos[`m:${m}`], b = pos[`t:${t}`]; return curve(a.x + a.w / 2, a.y, b.x - b.w / 2, b.y, "e2"); }),
       ...themes.map((t) => { const p = pos[`t:${t}`]; return curve(rec.x - rec.w / 2, rec.y, p.x + p.w / 2, p.y, "e3"); }),
     ].join("");
+    const ly = H - 12;
+    const legend = `
+      <g class="legend">
+        <line x1="230" y1="${ly}" x2="262" y2="${ly}" class="e3"/><text x="270" y="${ly + 4}">shares a theme</text>
+        ${similar.length ? `<rect x="400" y="${ly - 8}" width="32" height="16" rx="8" class="fan-key"/><text x="440" y="${ly + 4}">also loved by people who loved the recommendation</text>` : ""}
+      </g>`;
     const pill = (p, text, cls, title) => `
       <g class="${cls}"><title>${esc(title)}</title>
         <rect x="${p.x - p.w / 2}" y="${p.y - 14}" width="${p.w}" height="28" rx="14"/>
@@ -355,14 +366,17 @@
           .colhead{font-size:10px;font-weight:600;letter-spacing:.08em;fill:var(--faint)}
           .e1{stroke:var(--line);stroke-width:1.5}.e2{stroke:var(--faint);stroke-width:1.2;opacity:.7}
           .e3{stroke:var(--accent);stroke-width:1.5;opacity:.65}
+          .n-fan rect,.fan-key{fill:var(--surface);stroke:var(--accent);stroke-width:1.5;stroke-dasharray:4 3}.n-fan text{fill:var(--text);font-size:12px}
+          .legend text{font-size:11px;fill:var(--muted)}
           .n-movie rect{fill:var(--surface);stroke:var(--line)}.n-movie text{fill:var(--text);font-size:12px}
           .n-theme rect{fill:var(--accent-soft)}.n-theme text{fill:var(--accent);font-size:12px;font-weight:500}
           .n-rec rect{fill:var(--accent)}.n-rec text{fill:var(--on-accent);font-size:12px;font-weight:600}
           .n-you circle{fill:var(--text)}.n-you text{fill:var(--bg);font-size:11px;font-weight:600}
         </style>
-        ${heads}${lines}
+        ${heads}${lines}${legend}
         <g class="n-you"><circle cx="${you.x}" cy="${you.y}" r="18"/><text x="${you.x}" y="${you.y + 4}" text-anchor="middle">You</text></g>
-        ${liked.map((m) => pill(pos[`m:${m.title}`], cut(m.title, 26), "n-movie", `${m.title}: you rated it ${m.rating}★`)).join("")}
+        ${liked.map((m) => pill(pos[`m:${m.title}`], cut(m.title, 26), fans.has(m.title) ? "n-fan" : "n-movie",
+          `${m.title}: you rated it ${m.rating}★${fans.has(m.title) ? ` · ${fans.get(m.title)} people loved both` : ""}`)).join("")}
         ${themes.map((t) => pill(pos[`t:${t}`], cut(t, 22), "n-theme", `Theme: ${t}`)).join("")}
         ${pill(rec, recTitle, "n-rec", ev.recommended.title)}
       </svg>`;
@@ -381,11 +395,11 @@
         </div>
         <div class="setting">
           <div class="setting-row">
-            <label class="setting-name" for="alpha">Theme match vs popularity</label>
+            <label class="setting-name" for="alpha">Graph match vs popularity</label>
             <span class="setting-value" data-alpha-value>${state.alpha.toFixed(1)}</span>
           </div>
           <input id="alpha" type="range" min="0" max="1" step="0.1" value="${state.alpha}" data-alpha>
-          <div class="range-ends"><span>Popular</span><span>Themes only</span></div>
+          <div class="range-ends"><span>Popular</span><span>Graph only</span></div>
         </div>
         <div class="setting">
           <p class="note">${state.status?.llm
@@ -439,8 +453,9 @@
   function footer() {
     return `
       <footer class="foot">
-        <p>Every explanation is built from a real path in the knowledge graph: films you liked, a theme they share, and the
-          recommended film. The language model only rephrases that evidence and is told not to add any other facts.</p>
+        <p>Every explanation is built from real paths in the knowledge graph: films you liked, the themes they share with
+          the recommended film, and films that the same people also loved. The language model only rephrases that evidence
+          and is told not to add any other facts.</p>
         <p>Ratings from MovieLens 32M (GroupLens). Plots and posters from TMDB. This product uses the TMDB API but is not
           endorsed or certified by TMDB.</p>
       </footer>`;
@@ -476,7 +491,12 @@
       const open = t.getAttribute("aria-expanded") !== "true";
       t.setAttribute("aria-expanded", String(open));
       t.firstChild.textContent = open ? "Hide graph path " : "Show graph path ";
-      if (open && !panel.innerHTML) panel.innerHTML = pathSVG(currentEvidence(Number(t.dataset.path)));
+      if (open && !panel.innerHTML) {
+        const ev = currentEvidence(Number(t.dataset.path));
+        const fans = (ev.liked_by_the_same_people || [])
+          .map((m) => `${esc(m.title)} <span class="faint">(${Number(m.shared_fans).toLocaleString()} loved both)</span>`).join(" · ");
+        panel.innerHTML = pathSVG(ev) + (fans ? `<p class="path-note">People who loved ${esc(ev.recommended.title)} also loved: ${fans}</p>` : "");
+      }
       panel.hidden = !open;
     }
   });
@@ -504,7 +524,7 @@
   document.addEventListener("change", (e) => {
     if (e.target.matches("[data-sort]")) { state.sort = e.target.value; state.shown = PAGE; updateBrowse(); }
     else if (e.target.matches("[data-alpha]")) {
-      state.alpha = Math.round(Number(e.target.value) * 10) / 10; store.set("alpha", state.alpha); settingsChanged();
+      state.alpha = Math.round(Number(e.target.value) * 10) / 10; store.set("alpha_v2", state.alpha); settingsChanged();
     } else if (e.target.matches("[data-user]")) {
       state.userId = Number(e.target.value); store.set("userId", state.userId); render();
     }
@@ -518,6 +538,7 @@
     try {
       const [status, catalog, users] = await Promise.all([api("/api/status"), api("/api/catalog"), api("/api/users")]);
       state.status = status;
+      if (state.alpha === null) state.alpha = status.defaultAlpha;
       state.catalog = catalog;
       state.byId = new Map(catalog.map((f) => [f.id, f]));
       state.genres = counted(catalog, "genres");

@@ -182,3 +182,12 @@ def test_mention_finder_and_faithfulness():
     assert good["faithful"] and good["mentions_liked_title"] and good["mentions_evidence_theme"]
     bad = ev.check_faithfulness("Like The Avengers, it is about identity.", evidence, finder)
     assert not bad["faithful"] and bad["unsupported_titles"] == ["The Avengers"] and bad["unsupported_themes"] == ["identity"]
+
+
+def test_template_with_similarity_path():
+    ev = {**EVIDENCE, "liked_by_the_same_people": [{"title": "C", "rating": 5.0, "shared_fans": 120}]}
+    assert explainer.template_text(ev) == ("Recommended because many people who loved *C* also loved *Rec*, and it "
+                                           "shares the theme **redemption** with *A* and *B*.")
+    only = {**ev, "evidence": []}
+    assert explainer.template_text(only) == "Recommended because many people who loved *C* also loved *Rec*."
+    assert explainer.has_path(only) and not explainer.has_path({**only, "liked_by_the_same_people": []})

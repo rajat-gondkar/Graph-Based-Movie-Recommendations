@@ -15,8 +15,8 @@
     "SIMILAR": 192150
   },
   "checks_passed": true,
-  "load_seconds": 37.7,
-  "total_seconds": 47.0,
+  "load_seconds": 35.9,
+  "total_seconds": 46.6,
   "most_common_themes": [
     [
       "identity",

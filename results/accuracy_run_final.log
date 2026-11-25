@@ -1,0 +1,38 @@
+[1/4] Catalogue and relevant items (D27), split: test
+  catalogue: 3,671 films (graph films with >= 5 train ratings); users with a relevant test item: 2,955; relevant items: 56,299
+[2/4] Baselines (D28)
+  Popularity: 0.4 s
+  Item-kNN: 285.8 s
+  SVD: 1.2 s
+[3/4] Graph recommender (one pool per user, re-ranked for every setting)
+  595.9 s; lists containing a train item: 0; lists with a film outside the catalogue: 0; users with a pool under 10: 1
+[4/4] Metrics
+
+K = 5
+                                    method  users  precision  recall   ndcg  hit_rate  coverage  avg_popularity
+                                Popularity   2955     0.1003  0.0336 0.1086    0.3086    0.0305       1554.4429
+                                  Item-kNN   2955     0.1431  0.0526 0.1566    0.4332    0.2819        795.4596
+                                       SVD   2955     0.1377  0.0496 0.1509    0.4315    0.1452        912.7635
+                      Graph pure (α = 1.0)   2955     0.0177  0.0060 0.0185    0.0816    0.2498        174.8683
+                    Graph hybrid (α = 0.8)   2955     0.0257  0.0087 0.0275    0.1154    0.2484        266.5387
+Graph themes + similar (w = 0.75, α = 0.6)   2955     0.1524  0.0553 0.1671    0.4531    0.1441        996.1126
+
+K = 10
+                                    method  users  precision  recall   ndcg  hit_rate  coverage  avg_popularity
+                                Popularity   2955     0.0855  0.0541 0.1024    0.4261    0.0471       1396.8324
+                                  Item-kNN   2955     0.1221  0.0858 0.1490    0.5584    0.4263        748.0128
+                                       SVD   2955     0.1155  0.0802 0.1420    0.5570    0.2084        830.7201
+                      Graph pure (α = 1.0)   2955     0.0182  0.0113 0.0199    0.1550    0.3885        173.1895
+                    Graph hybrid (α = 0.8)   2955     0.0244  0.0155 0.0279    0.1966    0.3697        252.4285
+Graph themes + similar (w = 0.75, α = 0.6)   2955     0.1294  0.0909 0.1585    0.5777    0.1945        940.4514
+
+α sweep (K = 10)
+ alpha  users  precision  recall   ndcg  hit_rate  coverage  avg_popularity
+0.0000   2955     0.0537  0.0343 0.0677    0.3459    0.1618        665.4107
+0.2000   2955     0.0521  0.0331 0.0663    0.3398    0.1659        650.0409
+0.4000   2955     0.0487  0.0312 0.0584    0.3296    0.2231        569.7540
+0.6000   2955     0.0365  0.0226 0.0428    0.2670    0.3165        391.2719
+0.8000   2955     0.0244  0.0155 0.0279    0.1966    0.3697        252.4285
+1.0000   2955     0.0182  0.0113 0.0199    0.1550    0.3885        173.1895
+
+Wrote results/accuracy_results.csv, alpha_sweep.csv, accuracy_chart.png, alpha_sweep.png, accuracy_stats.json (897.2 s)

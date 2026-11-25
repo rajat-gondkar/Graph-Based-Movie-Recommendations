@@ -474,6 +474,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
 }
 .path svg { display: block; width: 100%; min-width: 560px; height: auto; }
 .path text { font-family: var(--font-sans); }
+.path-note { margin: var(--s3) 0 0; font-size: 13px; color: var(--muted); line-height: 1.5; }
 
 /* ---------- States ---------- */
 .loading { padding: var(--s8) 0; text-align: center; color: var(--muted); }
