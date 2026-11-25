@@ -2,147 +2,140 @@
 
 **Graph-Based Knowledge Representation for Explainable Movie Recommendations**
 
-Users, movies, genres, and LLM-extracted *themes* (like "redemption" or "found family") live in a Neo4j knowledge graph. The recommender matches a user's theme preferences, and every recommendation is explained by the actual graph path from the user's liked movies to the recommended one.
+Users, films, genres and LLM-extracted *themes* (such as "redemption" or "found family") live in a Neo4j knowledge graph. Recommendations combine two kinds of graph path: films that share themes with the ones you liked, and films that the same people loved (similarity links built from ratings). Every recommendation is explained from the actual paths behind it, by a language model that may only rephrase that evidence, or by a fixed template.
 
-> Status: Phases 0 and 1 done; Phase 2 mostly done (themes extracted by the LLM for all 2,426 movies of the MovieLens 32M sample and normalized to 84 themes; a few review items are still open). Sections marked "coming" are filled in as the project is built.
+![Results page with an opened graph path](results/screenshots/web_graph_path_similar.png)
+
+## Results at a glance
+
+MovieLens 32M sample: 3,843 films (387 from 2020-2023), 2,999 users, 617k ratings, 95 themes. Leakage-free evaluation (graph built from train ratings only; weights chosen on a separate validation split), K = 10, 2,955 users:
+
+| Method | Precision | Recall | NDCG | Hit rate |
+|---|---|---|---|---|
+| Popularity | 0.086 | 0.054 | 0.102 | 0.43 |
+| Item-kNN | 0.122 | 0.086 | 0.149 | 0.56 |
+| SVD | 0.116 | 0.080 | 0.142 | 0.56 |
+| Graph, themes only | 0.024 | 0.016 | 0.028 | 0.20 |
+| **Graph, themes + similarity (final)** | **0.129** | **0.091** | **0.159** | **0.58** |
+
+Explanations (50 sampled): 100% mention only titles and themes from their evidence; every sampled recommendation has a theme path and a similarity path. Full numbers, method and limitations: `../PROJECT_REPORT_LOG.md`.
 
 ## Requirements
 
-- Python 3.10-3.13, with 3.12 recommended. The pinned packages don't support Python 3.14 yet.
+- Python 3.10-3.13 (3.12 recommended; the pinned packages don't support 3.14 yet).
 - A Docker runtime for Neo4j:
-  - macOS: [OrbStack](https://orbstack.dev/) (light, free for personal use), [Docker Desktop](https://www.docker.com/products/docker-desktop/), or Colima (free, command line only; see [Colima on macOS](#colima-on-macos)).
-  - Windows: Docker Desktop (WSL 2 backend).
-  - Linux: Docker Engine with the Compose plugin.
-  - No Docker? See [Neo4j without Docker](#neo4j-without-docker).
-- A free TMDB API key (Phase 1) and an LLM API key with a little credit (Phase 2; NanoGPT by default, OpenRouter also works). See [API keys](#api-keys).
+  - macOS: [OrbStack](https://orbstack.dev/), [Docker Desktop](https://www.docker.com/products/docker-desktop/), or Colima (free, command line; see [Colima on macOS](#colima-on-macos)).
+  - Windows: Docker Desktop (WSL 2 backend). Linux: Docker Engine with the Compose plugin.
+- About 8 GB of RAM (Neo4j is capped at a 1 GB heap) and 3 GB of free disk.
+- API keys (see [API keys](#api-keys)): TMDB (free) and an LLM provider with a little credit.
 
 ## Setup
-
-### 1. Python environment
-
-macOS / Linux:
 
 ```bash
 cd movie-kg-recsys
 python3.12 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate                 # Windows PowerShell: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+pip install -r requirements-optional.txt  # sentence-transformers for theme normalization (pulls in torch)
+cp .env.example .env                       # Windows: copy .env.example .env
 ```
 
-Windows (PowerShell):
-
-```powershell
-cd movie-kg-recsys
-py -3.12 -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-In Command Prompt, activate with `.venv\Scripts\activate.bat`. If PowerShell blocks the activation script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
-
-Optional extras, needed from Phase 2 (theme normalization) and Phase 7 (embeddings):
+Fill in `.env`. Set `NEO4J_PASSWORD` (8+ characters, no `$` or quotes) **before** the first Neo4j start. `.env` is git-ignored; never commit it.
 
 ```bash
-pip install -r requirements-optional.txt
+docker compose up -d                      # Neo4j 5 Community; browser at http://localhost:7474
+python config.py                          # expect every package "ok", settings "set", "Neo4j connection OK"
 ```
 
-### 2. Settings file
-
-```bash
-cp .env.example .env        # Windows: copy .env.example .env
-```
-
-Open `.env` and fill in the values. Set `NEO4J_PASSWORD` (8+ characters, no `$` or quotes) **before** starting Neo4j for the first time. `.env` is git-ignored; never commit it.
-
-### 3. Start Neo4j
-
-```bash
-docker compose up -d
-docker compose ps           # the neo4j service should be running
-```
-
-Open http://localhost:7474 and log in with user `neo4j` and your `NEO4J_PASSWORD` (connect URL `bolt://localhost:7687`). The first start downloads the image (a few hundred MB) and takes a minute or two.
-
-Stop with `docker compose stop` and start again with `docker compose start`. The database lives in `neo4j_data/`.
-
-#### Colima on macOS
-
-This project was set up with Colima. One-time install:
+### Colima on macOS
 
 ```bash
 brew install colima docker docker-compose docker-credential-helper
 colima start --cpu 2 --memory 3 --disk 20 --vm-type vz
 ```
 
-For `docker compose` (with a space) to work, `~/.docker/config.json` needs `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]`, and `"credsStore"` must name a helper that exists (`"osxkeychain"`).
+`~/.docker/config.json` needs `"cliPluginsExtraDirs": ["/opt/homebrew/lib/docker/cli-plugins"]` and `"credsStore": "osxkeychain"`. After a reboot run `colima start` before `docker compose up -d`.
 
-After a reboot, run `colima start` before `docker compose up -d`. `colima stop` shuts the VM down and frees its memory.
+## Run order
 
-### 4. Check the setup
+Run everything from `movie-kg-recsys/` with the venv active. Every API step is cached and resumable: a re-run never pays twice.
+
+| # | Step | Command | Notes |
+|---|---|---|---|
+| 1 | Prepare the data | `python scripts/01_prepare_data.py` | Downloads MovieLens 32M (239 MB) once; samples 2,999 users and 3,864 films; train/test split by time |
+| 2 | Fetch plots and posters | `python scripts/02_fetch_tmdb.py` | About 3,900 TMDB calls (~10 min) on a fresh start; try `--limit 5` first |
+| 3 | Extract themes with the LLM | `python scripts/03_extract_themes.py` | One call per film: about 3,850 calls, roughly **$0.65 and 1.5-2 h** on a fresh start. Asks y/n first; try `--limit 10` |
+| 4 | Normalize themes | `python scripts/04_normalize_themes.py` | Merges near-duplicates into 95 themes |
+| 3+4 | Or both, unattended | `caffeinate -i bash scripts/overnight_extract.sh` | macOS; drop `caffeinate -i` elsewhere |
+| 5 | Build the graph | `python scripts/05_build_graph.py --mode full --wipe` | About 50 s; prints counts and 10 checks |
+| 6 | Use it | `uvicorn app.server:app --port 8000` | Open http://localhost:8000 |
+| - | Command line | `python -m src.recommender --user 92` | `--ratings "1:5,2571:5,4993:4"` for a new profile; `--explain template` to skip the LLM |
+| - | Tests | `pytest -q` | 41 tests, no paid calls; most need the full graph |
+
+### Evaluation (optional, about 30 minutes, ~$0.02)
 
 ```bash
-python config.py
+python scripts/05_build_graph.py --mode val --wipe     # tuning graph: earlier 80% of each user's train ratings
+python scripts/06_evaluate_accuracy.py --split val     # weight grid -> results/validation_grid.csv
+python scripts/05_build_graph.py --mode eval --wipe    # train ratings only (no test leakage)
+python scripts/06_evaluate_accuracy.py                 # -> results/accuracy_results.csv and charts
+python scripts/07_evaluate_explanations.py             # 50 explanations, ~50 LLM calls, asks y/n
+python scripts/05_build_graph.py --mode full --wipe    # back to the demo graph
 ```
 
-Expect every package marked `ok`, your settings shown as `set` (secret values are never printed), and `Neo4j connection OK`. Missing TMDB or LLM keys are fine until Phases 1 and 2.
+The graph records its mode; the evaluation scripts refuse to run on the wrong one, and switching modes needs `--wipe`.
+
+## How it works
+
+```
+(User)-[:RATED {rating}]->(Movie)-[:HAS_THEME]->(Theme)
+                          (Movie)-[:HAS_GENRE]->(Genre)
+                          (Movie)-[:SIMILAR {score, coLikes}]->(Movie)
+```
+
+1. **Themes:** an LLM reads each film's TMDB plot (plus title, genres, tagline, user tags) and returns 3-5 themes, preferring a 50-theme seed list so films share a vocabulary. Normalization merges near-duplicates with sentence embeddings and drops themes on fewer than 3 films.
+2. **Similarity links:** each film links to its 50 most similar films by rating patterns (adjusted cosine), computed from the same ratings the graph holds.
+3. **Ranking:** for an unseen film, a theme score (your affinity for its themes × how rare each theme is) and a genre score form the content part; a similarity score sums its links to films you rated. `graph = 0.25 × content + 0.75 × similarity`, then `final = 0.6 × graph + 0.4 × popularity`. The weights were chosen on a validation split.
+4. **Explanations:** the graph paths behind a recommendation become an evidence object (shared themes with the liked films that have them; liked films that the same people loved). The LLM writes 1-2 sentences using only that evidence; the template does it without an LLM. Texts are cached.
+5. **New users:** the web app's liked films (counted as 5 stars) go into a temporary graph user that is deleted after each request.
+
+Settings live in `config.py` (sample size, thresholds, `CF_WEIGHT`, `ALPHA`, themes per explanation, and so on).
 
 ## API keys
 
-- **TMDB (free):** create an account at themoviedb.org, then go to Settings → API and request a key (developer, personal or educational use). Put the "API Key" (v3) in `TMDB_API_KEY`. The longer "API Read Access Token" works too.
-- **LLM provider (NanoGPT by default):** create a key at nano-gpt.com, add a few dollars of credit, and put it in `LLM_API_KEY`. Put a model id from `https://nano-gpt.com/api/v1/models` in `LLM_MODEL`; this project uses `google/gemini-3.5-flash-lite`, about $0.30 / $2.50 per 1M tokens in / out, so extracting themes for about 2,400 movies costs well under a dollar (it cost $0.40 in total here). To use OpenRouter instead, set `LLM_BASE_URL=https://openrouter.ai/api/v1` (or keep the old `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` names). Free OpenRouter `:free` models are capped at 50 requests a day, which is too slow for theme extraction.
-
-## Neo4j without Docker
-
-Only `NEO4J_URI`, `NEO4J_USER`, and `NEO4J_PASSWORD` in `.env` change.
-
-- **Neo4j Desktop** (free app): create a local DBMS on version 5.x, set a password, and start it. `NEO4J_URI` stays `bolt://localhost:7687`.
-- **Neo4j AuraDB Free** (cloud): create a free instance and save the generated credentials. Use its `neo4j+s://...databases.neo4j.io` URI. The free tier allows 200k nodes and 400k relationships; this project needs about 2k nodes and 75k relationships.
-
-## Dataset
-
-The project uses [MovieLens 32M](https://grouplens.org/datasets/movielens/32m/) (collected 10/2023), which `01_prepare_data.py` downloads into `data/raw/ml-32m/` (239 MB zip, about 900 MB unzipped; the first download can take a while). It keeps a demo-sized sample: the 2,500 most-rated movies, then 1,000 random users (seed 42), then movies with at least 10 ratings and users with at least 20 inside that sample. That gives about 2,430 movies, 1,000 users, and 126k ratings. Change the size with `--max-movies` and `--users` (set `config.MAX_MOVIES` and `config.SAMPLE_USERS` to change the defaults). Loading the data needs about 2 GB of free RAM. Earlier runs used the much smaller, older `ml-latest-small` (9/2018), which is why some old files in `results/` are named `small_min20` and `small_min10`.
+- **TMDB (free):** themoviedb.org → Settings → API. Put the v3 "API Key" (or the longer v4 "API Read Access Token") in `TMDB_API_KEY`.
+- **LLM:** any OpenAI-compatible provider. Default NanoGPT: create a key at nano-gpt.com, add a few dollars, set `LLM_API_KEY` and `LLM_MODEL` (this project used `google/gemini-3.5-flash-lite`, about $0.30 / $2.50 per million tokens in / out). For OpenRouter set `LLM_BASE_URL=https://openrouter.ai/api/v1`. Every call is logged with tokens and cost in `data/cache/llm_usage.csv`.
 
 ## Project layout
 
 ```
 movie-kg-recsys/
-├── config.py                  # paths, constants, seed themes, .env loading; run it for a setup check
-├── docker-compose.yml         # Neo4j Community
-├── requirements.txt           # core packages (pinned)
-├── requirements-optional.txt  # sentence-transformers, torch, pykeen
-├── .env.example               # copy to .env and fill in
-├── data/                      # raw/, cache/, processed/ (git-ignored)
-├── src/                       # data, TMDB, LLM, themes, graph, recommender, explainer, evaluation
-├── scripts/                   # numbered pipeline scripts 01-07, plus the optional GPU scripts
-├── app/                       # Streamlit dashboard
-├── results/                   # metrics CSVs, charts, survey data, screenshots (report figures)
-└── tests/                     # smoke tests (no API calls)
+├── config.py                  # settings; run it for a setup check
+├── docker-compose.yml         # Neo4j 5 Community (1 GB heap)
+├── requirements.txt           # core packages (pinned); requirements-optional.txt: sentence-transformers, torch
+├── scripts/                   # 01-07 pipeline and evaluation, overnight_extract.sh
+├── src/                       # data, TMDB, LLM, themes, graph, recommender, explainer, baselines, evaluation
+├── app/                       # server.py (FastAPI) + static/ (the web page)
+├── tests/                     # smoke, pipeline and web tests
+├── results/                   # stats, logs, charts, screenshots (report figures)
+└── data/                      # raw/, cache/, processed/ (git-ignored; caches hold every paid API answer)
 ```
 
-## Run order
-
-| Step | Command | Phase |
-|---|---|---|
-| Setup check | `python config.py` | 0 |
-| Prepare data (downloads MovieLens 32M, 239 MB, if needed; samples it; about 10 s after the download) | `python scripts/01_prepare_data.py` | 1 |
-| Fetch TMDB metadata (cached; about 7 min the first time, try `--limit 5` first) | `python scripts/02_fetch_tmdb.py` | 1 |
-| Extract themes (try `--limit 10` first; it asks y/n before spending, and resumes if stopped) | `python scripts/03_extract_themes.py` | 2 |
-| Normalize themes (install `requirements-optional.txt` for the embedding step) | `python scripts/04_normalize_themes.py` | 2 |
-| Or run steps 3 and 4 unattended (extraction, a second pass, normalization; keeps the Mac awake; about 27 minutes for 1,129 movies) | `caffeinate -i bash scripts/overnight_extract.sh` | 2 |
-| Build the graph | `python scripts/05_build_graph.py --mode full --wipe` | 3 (coming) |
-| CLI recommendations | `python -m src.recommender --user 1` | 4 (coming) |
-| Dashboard | `streamlit run app/streamlit_app.py` | 5 (coming) |
-| Evaluation | `python scripts/06_evaluate_accuracy.py` and `python scripts/07_evaluate_explanations.py` | 6 (coming) |
+Back up `data/cache/` if you move the project: it holds every TMDB and LLM answer, so nothing has to be paid for again.
 
 ## Troubleshooting
 
-- **`docker: command not found`:** install a Docker runtime (see Requirements) and open it once so its command-line tools are set up.
-- **`Cannot connect to the Docker daemon`:** the runtime isn't running. Run `colima start`, or open OrbStack / Docker Desktop.
-- **`error getting credentials ... docker-credential-desktop`:** `~/.docker/config.json` is left over from an old Docker Desktop install. Install `docker-credential-helper` and set `"credsStore": "osxkeychain"`.
-- **`Set NEO4J_PASSWORD in .env`:** run `docker compose` from this folder (next to `.env`) and make sure the password is filled in.
-- **Login fails after changing `NEO4J_PASSWORD`:** Neo4j keeps the password from its first start. Run `docker compose down`, delete `neo4j_data/`, then `docker compose up -d`. This empties the database; the graph is rebuilt with one command from Phase 3 on.
-- **Port 7474 or 7687 already in use:** another Neo4j is running. Stop it, or change the left-hand port numbers in `docker-compose.yml` (and `NEO4J_URI` to match).
-- **`pip install` fails on Python 3.14:** use Python 3.12 (`python3.12 -m venv .venv`).
+- **`docker: command not found` / `Cannot connect to the Docker daemon`:** install or start the Docker runtime (`colima start`, or open OrbStack / Docker Desktop).
+- **`error getting credentials ... docker-credential-desktop`:** leftover Docker Desktop config; install `docker-credential-helper` and set `"credsStore": "osxkeychain"` in `~/.docker/config.json`.
+- **`Set NEO4J_PASSWORD in .env`:** run `docker compose` next to `.env`, with the password filled in.
+- **Neo4j login fails after changing the password:** Neo4j keeps the first password. `docker compose down`, delete `neo4j_data/`, `docker compose up -d`, then rebuild the graph (step 5).
+- **Port 7474 or 7687 in use:** another Neo4j is running; stop it, or change the left-hand ports in `docker-compose.yml` and `NEO4J_URI`.
+- **The page says it can't reach Neo4j:** `docker compose ps`; start it, then reload.
+- **The page warns about eval or val mode:** an evaluation graph is loaded; run `python scripts/05_build_graph.py --mode full --wipe`.
+- **TMDB 401:** the key is wrong or has spaces; both the v3 key and the v4 token work.
+- **LLM HTTP 401 / 402 / 404:** bad key / no credit / unknown model id. HTTP 429 or 5xx are retried automatically; explanations fall back to the template if the LLM stays unavailable.
+- **"Unauthenticated requests to the HF Hub" warning:** harmless; it appears when the sentence-embedding model is loaded.
+- **`pip install` fails on Python 3.14:** use Python 3.12.
 
 ## Credits
 
