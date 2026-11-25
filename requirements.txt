@@ -20,10 +20,13 @@ neo4j==6.3.1
 python-dotenv==1.2.3
 tqdm==4.70.1
 
-# Dashboard, graph view, charts
-streamlit==1.64.0
-pyvis==0.3.2
+# Web app (Phase 5): FastAPI backend served by uvicorn; the page itself is plain HTML/CSS/JS
+fastapi==0.165.0
+uvicorn==0.54.0
+
+# Charts for the report
 matplotlib==3.10.9
 
-# Smoke tests (Phase 8)
+# Tests (httpx is needed by FastAPI's TestClient)
 pytest==9.1.1
+httpx==0.28.1
