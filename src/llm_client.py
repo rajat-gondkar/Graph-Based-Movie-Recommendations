@@ -5,6 +5,7 @@ Retries with backoff, token and cost logging, and robust JSON parsing (spec 6.5)
 import csv
 import json
 import re
+import threading
 import time
 from datetime import datetime, timezone
 
@@ -27,6 +28,7 @@ _OBJECT_RE = re.compile(r"\{.*\}", re.DOTALL)
 _client: OpenAI | None = None
 _variant = 0          # which "extra settings" variant works with this provider (see _extra_bodies)
 _header_checked = False
+_lock = threading.Lock()  # explanations call chat() from several threads; guards the client and the usage log
 _price_cache: dict = {}
 
 
@@ -50,6 +52,11 @@ def provider_name() -> str:
 
 def _get_client() -> OpenAI:
     """One shared OpenAI-SDK client for the configured provider. The SDK's own retries are off; chat() retries."""
+    with _lock:
+        return _make_client()
+
+
+def _make_client() -> OpenAI:
     global _client
     if _client is None:
         s = config.get_llm_settings()
@@ -135,6 +142,12 @@ def _ensure_usage_header() -> None:
 
 
 def _log_usage(purpose: str, settings: dict, usage, finish_reason, ok: bool) -> None:
+    """Thread-safe wrapper: one row per call, never two writers at once."""
+    with _lock:
+        _log_usage_unlocked(purpose, settings, usage, finish_reason, ok)
+
+
+def _log_usage_unlocked(purpose: str, settings: dict, usage, finish_reason, ok: bool) -> None:
     """Append one row per API call to data/cache/llm_usage.csv (D16).
 
     The cost is what the provider reports (OpenRouter) or, if it reports none (NanoGPT),

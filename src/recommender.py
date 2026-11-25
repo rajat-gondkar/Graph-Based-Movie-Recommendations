@@ -116,6 +116,41 @@ def _minmax(values: list[float]) -> list[float]:
     return [(v - low) / (high - low) for v in values]
 
 
+CATALOG_QUERY = """
+MATCH (m:Movie)
+OPTIONAL MATCH (m)-[:HAS_GENRE]->(g:Genre)
+WITH m, collect(DISTINCT g.name) AS genres
+OPTIONAL MATCH (m)-[:HAS_THEME]->(t:Theme)
+RETURN m.movieId AS movieId, m.title AS title, m.year AS year, m.posterPath AS posterPath,
+       m.ratingCount AS ratingCount, m.avgRating AS avgRating, m.overview AS overview,
+       genres, collect(DISTINCT t.name) AS themes
+"""
+
+
+def user_top_movies(user_id: int, n: int = 12) -> list[dict]:
+    """A user's highest-rated movies (most recent first among ties), for the dashboard."""
+    rows = _read("""
+        MATCH (:User {userId: $uid})-[r:RATED]->(m:Movie)
+        RETURN m.movieId AS movieId, m.title AS title, m.year AS year, m.posterPath AS posterPath, r.rating AS rating
+        ORDER BY r.rating DESC, r.timestamp DESC, m.movieId LIMIT $n""", uid=user_id, n=n)
+    for r in rows:
+        r["displayTitle"] = display_title(r["title"], r["year"])
+    return rows
+
+
+def user_ids() -> list[int]:
+    return [r["id"] for r in _read("MATCH (u:User) WHERE u.userId > 0 RETURN u.userId AS id ORDER BY id")]
+
+
+def movie_catalog() -> list[dict]:
+    """Every graph movie with its genres and themes, for browsing in the dashboard."""
+    rows = _read(CATALOG_QUERY)
+    for r in rows:
+        r["displayTitle"] = display_title(r["title"], r["year"])
+        r["genres"], r["themes"] = sorted(r["genres"]), sorted(r["themes"])
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # Profiles (also used by the dashboard)
 # ---------------------------------------------------------------------------

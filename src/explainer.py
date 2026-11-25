@@ -6,6 +6,7 @@
 """
 import hashlib
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 import config
 from src import cache, llm_client
@@ -94,34 +95,53 @@ def _cache_key(user_key: str, movie_id: int, ev: dict) -> str:
     return hashlib.sha256(f"{user_key}|{movie_id}|{payload}".encode()).hexdigest()
 
 
-def _llm_text(user_key: str, movie_id: int, ev: dict, store: dict) -> tuple[str, str]:
-    """(text, source): source is 'cache', 'llm', or 'template-fallback'."""
-    key = _cache_key(user_key, movie_id, ev)
-    if key in store:
-        _stats["cache_hits"] += 1
-        return store[key]["text"], "cache"
-    messages = [{"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": json.dumps(ev, indent=2, ensure_ascii=False)}]
+def _messages(ev: dict) -> list[dict]:
+    return [{"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": json.dumps(ev, indent=2, ensure_ascii=False)}]
+
+
+def _call_llm(ev: dict) -> str | Exception:
+    """One LLM call; returns the text, or the exception so the caller can fall back to the template."""
     try:
-        _stats["llm_calls"] += 1
-        text = " ".join(llm_client.chat(messages, max_tokens=120, temperature=0.3, purpose="explanation").split())
-    except (llm_client.LLMError, llm_client.LLMFatalError, KeyError, RuntimeError) as exc:
-        print(f"  LLM explanation failed for movie {movie_id} ({exc}); using the template.")
-        _stats["fallbacks"] += 1
-        return template_text(ev), "template-fallback"
-    store[key] = {"text": text, "userKey": user_key, "movieId": movie_id, "model": llm_client.model_name()}
-    cache.save_json(store, config.EXPLANATIONS_CACHE_PATH)  # D13: saved after every new call
-    return text, "llm"
+        return " ".join(llm_client.chat(_messages(ev), max_tokens=120, temperature=0.3, purpose="explanation").split())
+    except (Exception, SystemExit) as exc:  # noqa: BLE001 - any failure (even a missing key) means "use the template"
+        return exc
 
 
-def _explain(user_id: int, movie_id: int, mode: str, user_key: str, store: dict) -> dict:
+def _explain_batch(user_id: int, movie_ids: list[int], mode: str, user_key: str, workers: int = 1) -> list[dict]:
+    """Evidence and text for several movies. Missing LLM texts are fetched in parallel (workers threads);
+    the cache is read once and written once, from this thread only."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}")
-    ev = evidence(user_id, movie_id)
-    if mode == "template" or not ev["evidence"]:  # no theme path: nothing for the LLM to ground on
-        return {"text": template_text(ev), "evidence": ev, "mode": mode, "source": "template"}
-    text, source = _llm_text(user_key, movie_id, ev, store)
-    return {"text": text, "evidence": ev, "mode": mode, "source": source}
+    store = cache.load_json(config.EXPLANATIONS_CACHE_PATH)
+    results, todo = [], []
+    for movie_id in movie_ids:
+        ev = evidence(user_id, movie_id)
+        if mode == "template" or not ev["evidence"]:  # no theme path: nothing for the LLM to ground on (D41)
+            results.append({"text": template_text(ev), "evidence": ev, "mode": mode, "source": "template"})
+            continue
+        key = _cache_key(user_key, movie_id, ev)
+        if key in store:
+            _stats["cache_hits"] += 1
+            results.append({"text": store[key]["text"], "evidence": ev, "mode": mode, "source": "cache"})
+            continue
+        results.append({"text": None, "evidence": ev, "mode": mode, "source": "llm"})
+        todo.append((len(results) - 1, key, movie_id))
+    if todo:
+        _stats["llm_calls"] += len(todo)
+        evs = [results[i]["evidence"] for i, _, _ in todo]
+        with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+            replies = list(pool.map(_call_llm, evs))
+        for (i, key, movie_id), reply in zip(todo, replies):
+            if isinstance(reply, Exception) or not reply:
+                print(f"  LLM explanation failed for movie {movie_id} ({reply}); using the template.")
+                _stats["fallbacks"] += 1
+                results[i].update(text=template_text(results[i]["evidence"]), source="template-fallback")
+            else:
+                results[i]["text"] = reply
+                store[key] = {"text": reply, "userKey": user_key, "movieId": movie_id, "model": llm_client.model_name()}
+        cache.save_json(store, config.EXPLANATIONS_CACHE_PATH)  # D13: atomic write
+    return results
 
 
 # ---------------------------------------------------------------------------
@@ -129,25 +149,24 @@ def _explain(user_id: int, movie_id: int, mode: str, user_key: str, store: dict)
 # ---------------------------------------------------------------------------
 def explain(user_id: int, movie_id: int, mode: str = "llm") -> dict:
     """{"text", "evidence", "mode", "source"} for a user in the graph."""
-    return _explain(user_id, movie_id, mode, str(user_id), cache.load_json(config.EXPLANATIONS_CACHE_PATH))
+    return _explain_batch(user_id, [movie_id], mode, str(user_id))[0]
 
 
 def explain_for_ratings(ratings: dict[int, float], movie_id: int, mode: str = "llm") -> dict:
     """Same for a cold-start profile; the cache key uses a fixed 'custom' marker plus the evidence (D24)."""
     with temporary_user(ratings) as uid:
-        return _explain(uid, movie_id, mode, "custom", cache.load_json(config.EXPLANATIONS_CACHE_PATH))
+        return _explain_batch(uid, [movie_id], mode, "custom")[0]
 
 
-def explain_many(user_id: int, recs: list[dict], mode: str = "llm", custom: bool = False) -> list[dict]:
-    """Explanations for a list of recommendations, loading the cache once.
+def explain_many(user_id: int, recs: list[dict], mode: str = "llm", custom: bool = False,
+                 workers: int = 5) -> list[dict]:
+    """Explanations for a list of recommendations, with up to `workers` LLM calls at a time.
 
     Pass custom=True when user_id is a temporary user inside temporary_user(), so one temporary node serves all cards.
     """
     for key in _stats:
         _stats[key] = 0
-    store = cache.load_json(config.EXPLANATIONS_CACHE_PATH)
-    user_key = "custom" if custom else str(user_id)
-    return [_explain(user_id, rec["movieId"], mode, user_key, store) for rec in recs]
+    return _explain_batch(user_id, [r["movieId"] for r in recs], mode, "custom" if custom else str(user_id), workers)
 
 
 def last_batch_stats() -> dict:
