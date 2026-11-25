@@ -1,0 +1,31 @@
+{
+  "split": "val",
+  "catalog": 3387,
+  "users": 2946,
+  "relevant_items": 45057,
+  "graph_seconds": 529.3,
+  "total_seconds": 802.0,
+  "lists_with_train_items": 0,
+  "lists_outside_catalog": 0,
+  "best": {
+    "cf_weight": 0.75,
+    "alpha": 0.6,
+    "fill_ins": 0.0,
+    "users": 2946.0,
+    "precision": 0.09674134419551934,
+    "recall": 0.08948684575090303,
+    "ndcg": 0.12712338375563753,
+    "hit_rate": 0.48879837067209775,
+    "coverage": 0.19456746383229997,
+    "avg_popularity": 870.5559063136457
+  },
+  "users_with_pool_under_10": 1,
+  "fill_ins_per_alpha": {
+    "0.0": 10,
+    "0.2": 10,
+    "0.4": 10,
+    "0.6": 10,
+    "0.8": 10,
+    "1.0": 10
+  }
+}

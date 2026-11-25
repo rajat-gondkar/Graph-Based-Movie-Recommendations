@@ -23,7 +23,8 @@ STATS_PATH = config.RESULTS_DIR / "graph_stats.json"
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the movie knowledge graph in Neo4j.")
     parser.add_argument("--mode", choices=gb.MODES, default="full",
-                        help="eval = RATED edges from train.csv only; full = all ratings (default %(default)s)")
+                        help="val = earlier 80%% of train (tuning); eval = train.csv only; full = all ratings "
+                             "(default %(default)s)")
     parser.add_argument("--wipe", action="store_true", help="delete everything in the database first")
     args = parser.parse_args()
 
@@ -33,7 +34,8 @@ def main() -> None:
     print(f"  {len(data['movies']):,} movies, {data['themes']['theme'].nunique()} themes "
           f"({len(data['themes']):,} movie-theme pairs), {data['genres']['genre'].nunique()} genres "
           f"({len(data['genres']):,} pairs), {data['ratings']['userId'].nunique():,} users, "
-          f"{len(data['ratings']):,} ratings")
+          f"{len(data['ratings']):,} ratings; {len(data['similar']):,} SIMILAR edges "
+          f"({config.SIMILAR_NEIGHBOURS} neighbours per movie)")
 
     driver = gb.get_driver()
     try:

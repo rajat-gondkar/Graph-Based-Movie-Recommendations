@@ -11,11 +11,12 @@
   "relationships": {
     "HAS_GENRE": 9464,
     "HAS_THEME": 14810,
-    "RATED": 617003
+    "RATED": 617003,
+    "SIMILAR": 192150
   },
   "checks_passed": true,
-  "load_seconds": 29.7,
-  "total_seconds": 35.7,
+  "load_seconds": 37.7,
+  "total_seconds": 47.0,
   "most_common_themes": [
     [
       "identity",

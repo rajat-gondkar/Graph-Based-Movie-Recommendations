@@ -1,17 +1,25 @@
 """Build the Neo4j knowledge graph (spec section 7, D18, D19).
 
 (User)-[:RATED {rating, timestamp}]->(Movie)-[:HAS_THEME]->(Theme), (Movie)-[:HAS_GENRE]->(Genre),
-plus one (:Meta {mode, builtAt}) node that records whether the graph holds train ratings only (eval) or all (full).
+(Movie)-[:SIMILAR {score, coLikes}]->(Movie) (D48: the movie's nearest neighbours by rating patterns),
+plus one (:Meta {mode, builtAt}) node that records which ratings the graph holds:
+  val  = the earlier 80% of each user's train ratings (for tuning weights against the later 20%, D49)
+  eval = train ratings only (for the final test evaluation)
+  full = all ratings (for the demo)
 """
 import math
 
+import numpy as np
 import pandas as pd
 from neo4j import GraphDatabase
+from scipy import sparse
+from sklearn.preprocessing import normalize as l2_normalize
 
 import config
+from src import data_loading as dl
 
 BATCH_SIZE = 1000
-MODES = ("eval", "full")
+MODES = ("val", "eval", "full")
 
 CONSTRAINTS = [
     "CREATE CONSTRAINT user_id IF NOT EXISTS FOR (u:User) REQUIRE u.userId IS UNIQUE",
@@ -45,14 +53,56 @@ def load_inputs(mode: str) -> dict[str, pd.DataFrame]:
     movies = movies[movies["movieId"].isin(themes["movieId"])]
     themes = themes[themes["movieId"].isin(movies["movieId"])].drop_duplicates()
 
-    files = [config.TRAIN_PATH] if mode == "eval" else [config.TRAIN_PATH, config.TEST_PATH]
-    ratings = pd.concat([pd.read_csv(f) for f in files], ignore_index=True)
+    ratings = ratings_for_mode(mode)
     ratings = ratings[ratings["movieId"].isin(movies["movieId"])].drop_duplicates(["userId", "movieId"])
 
     genres = movies[["movieId", "genres"]].dropna()
     genres = genres.assign(genre=genres["genres"].str.split("|")).explode("genre")[["movieId", "genre"]]
     genres = genres[~genres["genre"].isin(config.DROP_GENRES) & (genres["genre"] != "")].drop_duplicates()
-    return {"movies": movies, "themes": themes, "genres": genres, "ratings": ratings}
+    return {"movies": movies, "themes": themes, "genres": genres, "ratings": ratings,
+            "similar": similar_edges(ratings)}
+
+
+def validation_split(train: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """D49: split train the same way as train/test (per user, latest 20% by time) into fit and validation parts."""
+    return dl.split_by_time(train, config.TEST_FRACTION)
+
+
+def ratings_for_mode(mode: str) -> pd.DataFrame:
+    train = pd.read_csv(config.TRAIN_PATH)
+    if mode == "val":
+        return validation_split(train)[0]
+    if mode == "eval":
+        return train
+    return pd.concat([train, pd.read_csv(config.TEST_PATH)], ignore_index=True)
+
+
+def similar_edges(ratings: pd.DataFrame, k: int = config.SIMILAR_NEIGHBOURS) -> list[dict]:
+    """D48: for every movie, its k most similar movies by adjusted cosine (ratings centred by each user's mean),
+    positive similarities only. coLikes = users who rated both movies >= LIKE_THRESHOLD (for explanations).
+    Computed from the same ratings that go into the graph, so the eval graph never sees test ratings."""
+    users = {u: i for i, u in enumerate(sorted(ratings["userId"].unique()))}
+    items = {m: j for j, m in enumerate(sorted(ratings["movieId"].unique()))}
+    ids = np.array(sorted(items, key=items.get))
+    rows = ratings["userId"].map(users).to_numpy()
+    cols = ratings["movieId"].map(items).to_numpy()
+    centred = ratings["rating"].to_numpy() - ratings["userId"].map(ratings.groupby("userId")["rating"].mean()).to_numpy()
+    shape = (len(users), len(items))
+    matrix = sparse.csr_matrix((centred.astype(np.float32), (rows, cols)), shape=shape)
+    item_vecs = l2_normalize(matrix.T.tocsr(), axis=1)
+    sim = (item_vecs @ item_vecs.T).toarray()
+    np.fill_diagonal(sim, 0.0)
+    liked = (ratings["rating"].to_numpy() >= config.LIKE_THRESHOLD).astype(np.float32)
+    likes = sparse.csr_matrix((liked, (rows, cols)), shape=shape)
+    co = (likes.T @ likes).toarray()
+    edges = []
+    top = np.argsort(-sim, axis=1)[:, :k]
+    for i, js in enumerate(top):
+        for j in js:
+            if sim[i, j] > 0:
+                edges.append({"from": int(ids[i]), "to": int(ids[j]), "score": round(float(sim[i, j]), 5),
+                              "coLikes": int(co[i, j])})
+    return edges
 
 
 def _batches(rows: list[dict], size: int = BATCH_SIZE):
@@ -117,6 +167,10 @@ def load_graph(driver, data: dict[str, pd.DataFrame]) -> None:
             UNWIND $rows AS row
             MATCH (u:User {userId: row.userId}) MATCH (m:Movie {movieId: row.movieId})
             MERGE (u)-[r:RATED]->(m) SET r.rating = row.rating, r.timestamp = row.timestamp""", rating_rows)
+        _run_batches(session, """
+            UNWIND $rows AS row
+            MATCH (a:Movie {movieId: row.from}) MATCH (b:Movie {movieId: row.to})
+            MERGE (a)-[s:SIMILAR]->(b) SET s.score = row.score, s.coLikes = row.coLikes""", data["similar"])
 
 
 def compute_stats(driver) -> int:
@@ -126,6 +180,8 @@ def compute_stats(driver) -> int:
             MATCH (m:Movie) OPTIONAL MATCH (:User)-[r:RATED]->(m)
             WITH m, count(r) AS n, avg(r.rating) AS avg
             SET m.ratingCount = n, m.avgRating = avg""").consume()
+        session.run("""
+            MATCH (u:User)-[r:RATED]->() WITH u, avg(r.rating) AS mean SET u.meanRating = mean""").consume()
         total = session.run("MATCH (m:Movie) RETURN count(m) AS n").single()["n"]
         themes = session.run("""
             MATCH (t:Theme) OPTIONAL MATCH (t)<-[:HAS_THEME]-(m:Movie)
@@ -173,6 +229,7 @@ def sanity_check(driver, data: dict[str, pd.DataFrame]) -> list[tuple[str, bool]
         ("HAS_THEME edges = movie-theme pairs", c["relationships"].get("HAS_THEME") == len(data["themes"])),
         ("HAS_GENRE edges = movie-genre pairs", c["relationships"].get("HAS_GENRE") == len(data["genres"])),
         ("RATED edges = loaded ratings", c["relationships"].get("RATED") == len(data["ratings"])),
+        ("SIMILAR edges = computed neighbour pairs", c["relationships"].get("SIMILAR", 0) == len(data["similar"])),
     ]
     with driver.session() as session:
         no_theme = session.run("MATCH (m:Movie) WHERE NOT (m)-[:HAS_THEME]->() RETURN count(m) AS n").single()["n"]

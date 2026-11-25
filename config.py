@@ -70,6 +70,10 @@ MIN_CANDIDATE_RATINGS = 5       # candidate movies need at least this many ratin
 POOL_SIZE = 100                 # theme-matched candidates fetched before re-ranking
 EVIDENCE_MAX_THEMES = 5         # shared themes shown in an explanation (3 before D45; films have at most 5)
 EVIDENCE_MAX_LIKED = 3          # liked films listed per shared theme
+SIMILAR_NEIGHBOURS = 50         # D48: SIMILAR edges per movie (nearest neighbours by rating patterns)
+CF_WEIGHT = 0.0                 # D48: share of the similarity score inside the graph score (0 = themes/genres only)
+CF_POOL_SIZE = 200              # candidates fetched through SIMILAR edges when CF_WEIGHT > 0
+ALPHA_SIMILAR = ALPHA            # alpha used with the similarity blend (set from the validation grid, D49)
 
 # ---------------------------------------------------------------------------
 # External services

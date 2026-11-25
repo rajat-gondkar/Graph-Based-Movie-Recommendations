@@ -167,17 +167,74 @@ def genre_profile(user_id: int) -> dict[str, float]:
 # ---------------------------------------------------------------------------
 # Candidate pool and ranking
 # ---------------------------------------------------------------------------
-def fetch_pool(user_id: int, pool_size: int = config.POOL_SIZE) -> dict:
-    """Everything needed to rank for one user: theme pool, candidate genres, and the user's genre affinity.
+CF_POOL_QUERY = """
+// D48: unseen candidates reached through SIMILAR edges from the movies the user rated
+MATCH (u:User {userId: $uid})-[r:RATED]->(:Movie)<-[s:SIMILAR]-(cand:Movie)
+WHERE NOT (u)-[:RATED]->(cand) AND cand.ratingCount >= $min_candidate_ratings
+WITH cand, sum(s.score * (r.rating - u.meanRating)) AS cfScore
+RETURN cand.movieId AS movieId, cfScore
+ORDER BY cfScore DESC, movieId
+LIMIT $n
+"""
 
-    The evaluation fetches this once per user and calls rerank() for every alpha.
+CF_SCORES_QUERY = """
+MATCH (u:User {userId: $uid})
+UNWIND $ids AS id
+MATCH (cand:Movie {movieId: id})
+OPTIONAL MATCH (u)-[r:RATED]->(:Movie)<-[s:SIMILAR]-(cand)
+RETURN id AS movieId, sum(s.score * (r.rating - u.meanRating)) AS cfScore
+"""
+
+THEME_SCORES_QUERY = """
+MATCH (u:User {userId: $uid})-[r:RATED]->(:Movie)-[:HAS_THEME]->(t:Theme)
+WHERE r.rating >= $like_threshold
+WITH t, sum(r.rating - 3.0) AS affinity
+UNWIND $ids AS id
+MATCH (cand:Movie {movieId: id})-[:HAS_THEME]->(t)
+RETURN cand.movieId AS movieId, sum(affinity * t.idf) AS themeScore,
+       collect({theme: t.name, affinity: affinity, idf: t.idf, contribution: affinity * t.idf}) AS matchedThemes
+"""
+
+MOVIE_INFO_QUERY = """
+UNWIND $ids AS id
+MATCH (m:Movie {movieId: id})
+RETURN m.movieId AS movieId, m.title AS title, m.year AS year, m.posterPath AS posterPath,
+       m.ratingCount AS ratingCount
+"""
+
+
+def fetch_pool(user_id: int, pool_size: int = config.POOL_SIZE, cf_pool: int | None = None) -> dict:
+    """Everything needed to rank for one user: the candidate pool with theme, similarity and genre inputs,
+    and the user's genre affinity. The evaluation fetches this once per user and calls rerank() many times.
+
+    Candidates = the top `pool_size` by theme score, plus (D48) the top `cf_pool` reached through SIMILAR edges.
+    cf_pool defaults to CF_POOL_SIZE when CF_WEIGHT > 0, else 0 (then the pool is exactly the theme pool).
     """
+    if cf_pool is None:
+        cf_pool = config.CF_POOL_SIZE if config.CF_WEIGHT > 0 else 0
     pool = _read(POOL_QUERY, uid=user_id, like_threshold=config.LIKE_THRESHOLD,
                  min_candidate_ratings=config.MIN_CANDIDATE_RATINGS, pool_size=pool_size)
+    if cf_pool:
+        known = {c["movieId"] for c in pool}
+        extra = [r["movieId"] for r in _read(CF_POOL_QUERY, uid=user_id, n=cf_pool,
+                                               min_candidate_ratings=config.MIN_CANDIDATE_RATINGS)
+                 if r["movieId"] not in known]
+        if extra:
+            themes = {r["movieId"]: r for r in _read(THEME_SCORES_QUERY, uid=user_id, ids=extra,
+                                                     like_threshold=config.LIKE_THRESHOLD)}
+            for info in _read(MOVIE_INFO_QUERY, ids=extra):
+                t = themes.get(info["movieId"], {})
+                pool.append({**info, "themeScore": t.get("themeScore", 0.0),
+                             "matchedThemes": t.get("matchedThemes", [])})
+        cf = {r["movieId"]: r["cfScore"] or 0.0 for r in _read(CF_SCORES_QUERY, uid=user_id,
+                                                               ids=[c["movieId"] for c in pool])}
+    else:
+        cf = {}
     genres = {r["movieId"]: r["genres"] for r in _read(CANDIDATE_GENRES_QUERY, ids=[c["movieId"] for c in pool])}
     for cand in pool:
         cand["genres"] = sorted(genres.get(cand["movieId"], []))
         cand["matchedThemes"] = sorted(cand["matchedThemes"], key=lambda t: (-t["contribution"], t["theme"]))
+        cand["cfScore"] = cf.get(cand["movieId"], 0.0)
     return {"userId": user_id, "pool": pool, "genre_affinity": genre_profile(user_id)}
 
 
@@ -188,19 +245,31 @@ def popular_fill(user_id: int, n: int, exclude: list[int]) -> list[dict]:
     rows = _read(POPULAR_QUERY, uid=user_id, exclude=exclude, n=n,
                  min_candidate_ratings=config.MIN_CANDIDATE_RATINGS)
     return [{**r, "score": None, "themeScore": 0.0, "genreScore": 0.0, "graphScore": 0.0, "popularity": None,
-             "matchedThemes": [], "genres": [], "filled": True} for r in rows]
+             "cfScore": 0.0, "matchedThemes": [], "genres": [], "filled": True} for r in rows]
 
 
-def rerank(pool_data: dict, k: int = 10, alpha: float = config.ALPHA, fill: bool = True) -> list[dict]:
-    """Score the pool (D20, D21) and return the top-k, padded with popular movies if needed (D22)."""
+def rerank(pool_data: dict, k: int = 10, alpha: float = config.ALPHA, fill: bool = True,
+           cf_weight: float | None = None) -> list[dict]:
+    """Score the pool (D20, D21, D48) and return the top-k, padded with popular movies if needed (D22).
+
+    content = (theme + GENRE_WEIGHT * genre) / (1 + GENRE_WEIGHT)
+    graph   = (1 - cf_weight) * content + cf_weight * similarity      (cf_weight = CF_WEIGHT by default)
+    score   = alpha * graph + (1 - alpha) * popularity
+    Every part is min-max scaled over the pool.
+    """
+    cf_weight = config.CF_WEIGHT if cf_weight is None else cf_weight
     pool, genre_aff = pool_data["pool"], pool_data["genre_affinity"]
     theme_raw = [c["themeScore"] for c in pool]
     genre_raw = [sum(genre_aff.get(g, 0.0) for g in c["genres"]) for c in pool]
     pop_raw = [math.log1p(c["ratingCount"]) for c in pool]
+    cf_raw = [c.get("cfScore", 0.0) for c in pool]
     ranked = []
-    for c, tn, gr, gn, pn in zip(pool, _minmax(theme_raw), genre_raw, _minmax(genre_raw), _minmax(pop_raw)):
-        graph = (tn + config.GENRE_WEIGHT * gn) / (1 + config.GENRE_WEIGHT)
-        ranked.append({**c, "genreScore": gr, "themeNorm": tn, "genreNorm": gn, "graphScore": graph,
+    for c, tn, gr, gn, pn, cn in zip(pool, _minmax(theme_raw), genre_raw, _minmax(genre_raw), _minmax(pop_raw),
+                                     _minmax(cf_raw)):
+        content = (tn + config.GENRE_WEIGHT * gn) / (1 + config.GENRE_WEIGHT)
+        graph = (1 - cf_weight) * content + cf_weight * cn
+        ranked.append({**c, "genreScore": gr, "themeNorm": tn, "genreNorm": gn, "cfNorm": cn,
+                       "contentScore": content, "graphScore": graph,
                        "popularity": pn, "score": alpha * graph + (1 - alpha) * pn, "filled": False})
     ranked.sort(key=lambda c: (-c["score"], c["movieId"]))
     top = ranked[:k]
