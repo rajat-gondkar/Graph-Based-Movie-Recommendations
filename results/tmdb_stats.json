@@ -1,23 +1,23 @@
 {
-  "created_utc": "2026-09-30 22:41:40",
-  "movies_in_base": 1297,
-  "cached_responses": 1297,
+  "created_utc": "2026-10-15 23:53:18",
+  "movies_in_base": 2432,
+  "cached_responses": 2432,
   "not_fetched_yet": 0,
-  "not_found_404": 2,
+  "not_found_404": 6,
   "empty_overview": 0,
-  "usable_with_overview": 1295,
-  "with_poster": 1295,
-  "with_tagline": 1282,
+  "usable_with_overview": 2426,
+  "with_poster": 2426,
+  "with_tagline": 2391,
   "overview_words": {
-    "mean": 46.7,
+    "mean": 47.0,
     "median": 45.0,
-    "min": 10,
-    "max": 118
+    "min": 9,
+    "max": 138
   },
   "last_run": {
-    "fetched": 0,
+    "fetched": 350,
     "failed": 0,
-    "seconds": 0.0,
+    "seconds": 118.9,
     "limit": null,
     "retry_missing": false
   }

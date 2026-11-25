@@ -1,0 +1,24 @@
+{
+  "created_utc": "2026-10-15 23:22:03",
+  "movies_in_base": 2269,
+  "cached_responses": 2269,
+  "not_fetched_yet": 0,
+  "not_found_404": 5,
+  "empty_overview": 0,
+  "usable_with_overview": 2264,
+  "with_poster": 2264,
+  "with_tagline": 2235,
+  "overview_words": {
+    "mean": 47.5,
+    "median": 45.0,
+    "min": 10,
+    "max": 159
+  },
+  "last_run": {
+    "fetched": 972,
+    "failed": 0,
+    "seconds": 326.1,
+    "limit": null,
+    "retry_missing": false
+  }
+}

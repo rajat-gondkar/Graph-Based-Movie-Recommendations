@@ -1,0 +1,93 @@
+{
+  "created_utc": "2026-09-30 22:31:18",
+  "thresholds": {
+    "min_movie_ratings": 20,
+    "min_user_ratings": 20,
+    "test_fraction": 0.2,
+    "relevant_threshold": 4.0
+  },
+  "raw": {
+    "movies_listed": 9742,
+    "tag_applications": 3683,
+    "movies_without_tmdbId": 8,
+    "users": 610,
+    "movies": 9724,
+    "ratings": 100836,
+    "density": 0.017,
+    "mean_ratings_per_user": 165.3,
+    "mean_ratings_per_movie": 10.4,
+    "mean_rating": 3.502,
+    "share_ratings_ge_4": 0.482
+  },
+  "filtered": {
+    "users": 566,
+    "movies": 1297,
+    "ratings": 67225,
+    "density": 0.0916,
+    "mean_ratings_per_user": 118.8,
+    "mean_ratings_per_movie": 51.8,
+    "mean_rating": 3.624,
+    "share_ratings_ge_4": 0.531,
+    "movies_with_user_tags": 668,
+    "movies_without_year": 0,
+    "year_range": [
+      1927,
+      2017
+    ],
+    "duplicate_tmdbIds": 0,
+    "titles_changed_by_cleaning": 319
+  },
+  "split": {
+    "train_ratings": 53783,
+    "test_ratings": 13442,
+    "train_ratings_ge_4": 28834,
+    "test_ratings_ge_4": 6891,
+    "users": 566,
+    "users_with_relevant_test_item": 552,
+    "test_items_per_user": {
+      "min": 4,
+      "mean": 23.7,
+      "max": 222
+    },
+    "train_period": [
+      "1996-03-29",
+      "2018-09-17"
+    ],
+    "test_period": [
+      "1996-03-29",
+      "2018-09-22"
+    ]
+  },
+  "rating_distribution_filtered": {
+    "0.5": 684,
+    "1.0": 1495,
+    "1.5": 835,
+    "2.0": 4030,
+    "2.5": 3112,
+    "3.0": 12841,
+    "3.5": 8503,
+    "4.0": 19057,
+    "4.5": 6290,
+    "5.0": 10378
+  },
+  "movies_per_genre_filtered": {
+    "Drama": 532,
+    "Comedy": 527,
+    "Action": 421,
+    "Thriller": 358,
+    "Adventure": 332,
+    "Sci-Fi": 257,
+    "Romance": 242,
+    "Crime": 203,
+    "Fantasy": 159,
+    "Children": 121,
+    "Mystery": 102,
+    "Animation": 93,
+    "Horror": 91,
+    "War": 57,
+    "Musical": 55,
+    "Western": 26,
+    "Film-Noir": 13,
+    "Documentary": 5
+  }
+}

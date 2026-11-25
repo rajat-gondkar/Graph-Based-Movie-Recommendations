@@ -1,8 +1,9 @@
-"""Phase 1, step 1: get MovieLens, keep a popular subset, clean titles, and split train/test.
+"""Phase 1, step 1: get MovieLens 32M, shrink it to demo size, clean titles, and split train/test.
 
 Usage:
     python scripts/01_prepare_data.py
-    python scripts/01_prepare_data.py --min-movie-ratings 30     # fewer movies, lower LLM cost
+    python scripts/01_prepare_data.py --max-movies 2000 --users 800     # smaller graph, lower LLM cost
+    python scripts/01_prepare_data.py --max-movies 0 --users 0          # no limits (very large!)
 Outputs: data/processed/movies_base.csv, train.csv, test.csv, and results/dataset_stats.json
 """
 import argparse
@@ -48,11 +49,16 @@ def split_stats(train, test) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Prepare the MovieLens subset and the train/test split.")
+    parser.add_argument("--max-movies", type=int, default=config.MAX_MOVIES,
+                        help="keep the N most-rated movies (0 = no limit; default %(default)s)")
+    parser.add_argument("--users", type=int, default=config.SAMPLE_USERS,
+                        help="random users to keep (0 = all eligible; default %(default)s)")
     parser.add_argument("--min-movie-ratings", type=int, default=config.MIN_RATINGS_PER_MOVIE,
-                        help="keep movies with at least this many ratings (default %(default)s)")
+                        help="keep movies with at least this many ratings in the user sample (default %(default)s)")
     parser.add_argument("--min-user-ratings", type=int, default=config.MIN_RATINGS_PER_USER,
                         help="keep users with at least this many remaining ratings (default %(default)s)")
     args = parser.parse_args()
+    max_movies, n_users = args.max_movies or None, args.users or None
     started = time.perf_counter()
 
     print("[1/4] MovieLens files")
@@ -61,16 +67,21 @@ def main() -> None:
     print(f"  raw: {len(raw['movies']):,} movies listed ({raw_stats['movies']:,} rated), "
           f"{raw_stats['users']:,} users, {raw_stats['ratings']:,} ratings, {len(raw['tags']):,} tags")
 
-    print(f"[2/4] Filtering: movies with >= {args.min_movie_ratings} ratings and a tmdbId, "
-          f"then users with >= {args.min_user_ratings} of those ratings")
-    ratings = dl.filter_subset(raw["ratings"], raw["links"], args.min_movie_ratings, args.min_user_ratings)
+    print(f"[2/4] Sampling: top {max_movies or 'all'} movies by rating count (with a tmdbId), "
+          f"{n_users or 'all eligible'} random users (seed {config.RANDOM_SEED}), then movies >= "
+          f"{args.min_movie_ratings} and users >= {args.min_user_ratings} ratings inside the sample")
+    ratings, funnel = dl.sample_subset(raw["ratings"], raw["links"], max_movies, n_users,
+                                       args.min_movie_ratings, args.min_user_ratings)
     movies = dl.build_movies_base(raw["movies"], raw["links"], ratings["movieId"].unique())
     kept = dl.rating_stats(ratings)
+    print(f"  top movies: {funnel['top_movies_kept']:,} (the last one has {funnel['rating_count_of_last_top_movie']:,} "
+          f"ratings overall); eligible users: {funnel['users_eligible']:,} of {funnel['users_total']:,}; "
+          f"sampled: {funnel['users_sampled']:,}")
     print(f"  kept: {kept['movies']:,} movies, {kept['users']:,} users, {kept['ratings']:,} ratings "
           f"(density {kept['density']:.3f})")
     if kept["movies"] > COST_WARNING_MOVIES:
         print(f"  Warning: {kept['movies']:,} movies means about that many LLM calls in Phase 2.\n"
-              f"  To cut cost, raise the threshold: python scripts/01_prepare_data.py --min-movie-ratings 30")
+              f"  To cut cost: python scripts/01_prepare_data.py --max-movies 2000")
 
     print(f"[3/4] Train/test split: latest {config.TEST_FRACTION:.0%} of each user's ratings go to test")
     train, test = dl.split_by_time(ratings, config.TEST_FRACTION)
@@ -89,7 +100,11 @@ def main() -> None:
     genre_counts = movies["genres"].str.split("|").explode().replace("", None).dropna().value_counts()
     stats = {
         "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        "dataset": config.MOVIELENS_DIR.name,
         "thresholds": {
+            "max_movies": max_movies,
+            "sample_users": n_users,
+            "random_seed": config.RANDOM_SEED,
             "min_movie_ratings": args.min_movie_ratings,
             "min_user_ratings": args.min_user_ratings,
             "test_fraction": config.TEST_FRACTION,
@@ -99,8 +114,10 @@ def main() -> None:
             "movies_listed": len(raw["movies"]),
             "tag_applications": len(raw["tags"]),
             "movies_without_tmdbId": int(raw["links"]["tmdbId"].isna().sum()),
+            "latest_rating": to_date(raw["ratings"]["timestamp"].max()),
             **raw_stats,
         },
+        "sampling": funnel,
         "filtered": {
             **kept,
             "movies_with_user_tags": len(tags),

@@ -4,7 +4,7 @@
 
 Users, movies, genres, and LLM-extracted *themes* (like "redemption" or "found family") live in a Neo4j knowledge graph. The recommender matches a user's theme preferences, and every recommendation is explained by the actual graph path from the user's liked movies to the recommended one.
 
-> Status: Phase 1 done (MovieLens subset, train/test split, TMDB plots and posters). Sections marked "coming" are filled in as the project is built.
+> Status: Phases 0 and 1 done; Phase 2 mostly done (themes extracted by the LLM for all 2,426 movies of the MovieLens 32M sample and normalized to 84 themes; a few review items are still open). Sections marked "coming" are filled in as the project is built.
 
 ## Requirements
 
@@ -14,7 +14,7 @@ Users, movies, genres, and LLM-extracted *themes* (like "redemption" or "found f
   - Windows: Docker Desktop (WSL 2 backend).
   - Linux: Docker Engine with the Compose plugin.
   - No Docker? See [Neo4j without Docker](#neo4j-without-docker).
-- A free TMDB API key (Phase 1) and an OpenRouter API key with a little credit (Phase 2). See [API keys](#api-keys).
+- A free TMDB API key (Phase 1) and an LLM API key with a little credit (Phase 2; NanoGPT by default, OpenRouter also works). See [API keys](#api-keys).
 
 ## Setup
 
@@ -84,12 +84,12 @@ After a reboot, run `colima start` before `docker compose up -d`. `colima stop` 
 python config.py
 ```
 
-Expect every package marked `ok`, your settings shown as `set` (secret values are never printed), and `Neo4j connection OK`. Missing TMDB or OpenRouter keys are fine until Phases 1 and 2.
+Expect every package marked `ok`, your settings shown as `set` (secret values are never printed), and `Neo4j connection OK`. Missing TMDB or LLM keys are fine until Phases 1 and 2.
 
 ## API keys
 
 - **TMDB (free):** create an account at themoviedb.org, then go to Settings → API and request a key (developer, personal or educational use). Put the "API Key" (v3) in `TMDB_API_KEY`. The longer "API Read Access Token" works too.
-- **OpenRouter:** sign up at openrouter.ai, create a key under Keys, and add a few dollars of credit. Pick a cheap, non-reasoning instruct model at openrouter.ai/models and copy its id into `OPENROUTER_MODEL`. Free (`:free`) models are capped at 50 requests a day unless you've bought $10+ of credits, which is too slow for theme extraction (about 1,300 calls). With a cheap model, the whole project should cost well under $1.
+- **LLM provider (NanoGPT by default):** create a key at nano-gpt.com, add a few dollars of credit, and put it in `LLM_API_KEY`. Put a model id from `https://nano-gpt.com/api/v1/models` in `LLM_MODEL`; this project uses `google/gemini-3.5-flash-lite`, about $0.30 / $2.50 per 1M tokens in / out, so extracting themes for about 2,400 movies costs well under a dollar (it cost $0.40 in total here). To use OpenRouter instead, set `LLM_BASE_URL=https://openrouter.ai/api/v1` (or keep the old `OPENROUTER_API_KEY` and `OPENROUTER_MODEL` names). Free OpenRouter `:free` models are capped at 50 requests a day, which is too slow for theme extraction.
 
 ## Neo4j without Docker
 
@@ -97,6 +97,10 @@ Only `NEO4J_URI`, `NEO4J_USER`, and `NEO4J_PASSWORD` in `.env` change.
 
 - **Neo4j Desktop** (free app): create a local DBMS on version 5.x, set a password, and start it. `NEO4J_URI` stays `bolt://localhost:7687`.
 - **Neo4j AuraDB Free** (cloud): create a free instance and save the generated credentials. Use its `neo4j+s://...databases.neo4j.io` URI. The free tier allows 200k nodes and 400k relationships; this project needs about 2k nodes and 75k relationships.
+
+## Dataset
+
+The project uses [MovieLens 32M](https://grouplens.org/datasets/movielens/32m/) (collected 10/2023), which `01_prepare_data.py` downloads into `data/raw/ml-32m/` (239 MB zip, about 900 MB unzipped; the first download can take a while). It keeps a demo-sized sample: the 2,500 most-rated movies, then 1,000 random users (seed 42), then movies with at least 10 ratings and users with at least 20 inside that sample. That gives about 2,430 movies, 1,000 users, and 126k ratings. Change the size with `--max-movies` and `--users` (set `config.MAX_MOVIES` and `config.SAMPLE_USERS` to change the defaults). Loading the data needs about 2 GB of free RAM. Earlier runs used the much smaller, older `ml-latest-small` (9/2018), which is why some old files in `results/` are named `small_min20` and `small_min10`.
 
 ## Project layout
 
@@ -120,10 +124,11 @@ movie-kg-recsys/
 | Step | Command | Phase |
 |---|---|---|
 | Setup check | `python config.py` | 0 |
-| Prepare data (downloads MovieLens if needed; about 5 s) | `python scripts/01_prepare_data.py` | 1 |
+| Prepare data (downloads MovieLens 32M, 239 MB, if needed; samples it; about 10 s after the download) | `python scripts/01_prepare_data.py` | 1 |
 | Fetch TMDB metadata (cached; about 7 min the first time, try `--limit 5` first) | `python scripts/02_fetch_tmdb.py` | 1 |
 | Extract themes (try `--limit 10` first; it asks y/n before spending, and resumes if stopped) | `python scripts/03_extract_themes.py` | 2 |
 | Normalize themes (install `requirements-optional.txt` for the embedding step) | `python scripts/04_normalize_themes.py` | 2 |
+| Or run steps 3 and 4 unattended (extraction, a second pass, normalization; keeps the Mac awake; about 27 minutes for 1,129 movies) | `caffeinate -i bash scripts/overnight_extract.sh` | 2 |
 | Build the graph | `python scripts/05_build_graph.py --mode full --wipe` | 3 (coming) |
 | CLI recommendations | `python -m src.recommender --user 1` | 4 (coming) |
 | Dashboard | `streamlit run app/streamlit_app.py` | 5 (coming) |

@@ -63,10 +63,14 @@ def main() -> None:
     else:
         print(f"[2/4] Mapping to seed themes: exact matches, then {config.EMBEDDING_MODEL} "
               f"cosine similarity >= {args.threshold}")
-    final, mapping, stats = tn.normalize(raw, config.SEED_THEMES, embedder, args.threshold, args.min_movies)
+    final, mapping, stats = tn.normalize(raw, config.SEED_THEMES, embedder, args.threshold, args.min_movies,
+                                         config.THEME_OVERRIDES, config.THEME_BLOCKLIST)
     print(f"  {stats['raw_themes_exact_seed']} raw themes match a seed exactly, "
           f"{stats['raw_themes_mapped_by_embedding']} mapped by embedding, "
-          f"{stats['raw_themes_kept_as_new']} kept as new themes")
+          f"{stats['raw_themes_kept_as_new']} kept as new themes, "
+          f"{stats['raw_themes_manual_override']} manual overrides, {stats['raw_themes_blocked']} blocked")
+    for _, row in mapping[mapping["method"].isin(["manual", "blocked"])].iterrows():
+        print(f"    review: {row['raw_theme']!r} -> {row['canonical_theme'] or '(dropped)'!r} ({row['method']})")
     examples = mapping[mapping["method"] == "embedding"].sort_values("similarity", ascending=False)
     for _, row in examples.head(8).iterrows():
         print(f"    {row['raw_theme']!r} -> {row['canonical_theme']!r} (similarity {row['similarity']:.2f})")

@@ -28,6 +28,7 @@ Popular user tags: {top_tags_or_none}
 Plot: {overview}"""
 
 MAX_THEMES = 5
+MAX_CONSECUTIVE_FAILURES = 10  # stop an unattended run if this many movies in a row fail
 
 
 def _key(theme: str) -> str:
@@ -106,6 +107,15 @@ def extract_one(movie: dict, tags: list[str]) -> dict:
     return {"themes": [], "status": "invalid_output", "attempts": 2, "raw_reply": reply[:300]}
 
 
+def _check_streak(streak: int) -> None:
+    """Circuit breaker: an unattended run shouldn't keep paying for replies that keep failing."""
+    if streak >= MAX_CONSECUTIVE_FAILURES:
+        raise llm_client.LLMFatalError(
+            f"{streak} movies in a row failed, so the run was stopped to avoid wasting money. "
+            "Check the model, the key, and your balance, then re-run: finished movies are kept."
+        )
+
+
 def run_extraction(todo: pd.DataFrame, tag_map: dict[int, list[str]], cache: dict) -> dict:
     """Extract themes for every movie in `todo`, writing the cache to disk after each movie.
 
@@ -113,18 +123,21 @@ def run_extraction(todo: pd.DataFrame, tag_map: dict[int, list[str]], cache: dic
     LLMFatalError (bad key, no credits, unknown model) is passed up so the caller can stop.
     """
     counts = {"ok": 0, "invalid_output": 0, "api_error": 0}
-    model = llm_client.model_name()
+    model, streak = llm_client.model_name(), 0
     for movie in tqdm(todo.to_dict("records"), desc="Themes", unit="movie"):
         movie_id = int(movie["movieId"])
         try:
             result = extract_one(movie, tag_map.get(movie_id, []))
         except llm_client.LLMError as exc:
             counts["api_error"] += 1
+            streak += 1
             tqdm.write(f"  {movie['title']}: {exc} (not cached; a re-run will retry it)")
+            _check_streak(streak)
             continue
         if result["status"] != "ok":
             tqdm.write(f"  {movie['title']}: no valid themes after 2 tries, recorded as empty")
         counts[result["status"]] += 1
+        streak = 0 if result["status"] == "ok" else streak + 1
         cache[str(movie_id)] = {
             "title": movie["title"],
             **result,
@@ -132,6 +145,7 @@ def run_extraction(todo: pd.DataFrame, tag_map: dict[int, list[str]], cache: dic
             "created_utc": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         }
         save_json(cache, config.THEMES_CACHE_PATH)  # after every movie, so nothing paid for is lost
+        _check_streak(streak)
     return counts
 
 

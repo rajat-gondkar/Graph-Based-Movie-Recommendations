@@ -55,6 +55,17 @@ def map_to_seeds(themes, seeds: list[str], embedder, threshold: float) -> pd.Dat
     return pd.DataFrame(rows, columns=MAPPING_COLUMNS)
 
 
+def apply_review(mapping: pd.DataFrame, overrides: dict[str, str], blocklist: set[str]) -> pd.DataFrame:
+    """Task 2.7: manual overrides (method "manual") and blocked genre words (method "blocked", canonical "")."""
+    mapping = mapping.copy()
+    for i, raw in mapping["raw_theme"].items():
+        if raw in overrides:
+            mapping.loc[i, ["canonical_theme", "method"]] = [overrides[raw], "manual"]
+        if mapping.loc[i, "canonical_theme"] in blocklist:
+            mapping.loc[i, ["canonical_theme", "method"]] = ["", "blocked"]
+    return mapping
+
+
 def drop_rare(pairs: pd.DataFrame, min_movies: int) -> tuple[pd.DataFrame, int]:
     """Step 4: drop themes used by fewer than min_movies movies.
 
@@ -73,13 +84,16 @@ def drop_rare(pairs: pd.DataFrame, min_movies: int) -> tuple[pd.DataFrame, int]:
 
 
 def normalize(raw_pairs: pd.DataFrame, seeds: list[str], embedder, threshold: float,
-              min_movies: int) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
-    """Spec 6.6 steps 1-5. Returns (movie_themes, mapping table, stats)."""
+              min_movies: int, overrides: dict[str, str] | None = None,
+              blocklist: set[str] | None = None) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
+    """Spec 6.6 steps 1-5, plus the task 2.7 manual review. Returns (movie_themes, mapping table, stats)."""
     pairs = raw_pairs.assign(theme=raw_pairs["theme"].map(basic_clean))
     pairs = pairs[pairs["theme"] != ""]
     mapping = map_to_seeds(pairs["theme"], seeds, embedder, threshold)
+    mapping = apply_review(mapping, overrides or {}, blocklist or set())
     canonical = dict(zip(mapping["raw_theme"], mapping["canonical_theme"]))
-    mapped = pairs.assign(theme=pairs["theme"].map(canonical)).drop_duplicates(["movieId", "theme"])
+    mapped = pairs.assign(theme=pairs["theme"].map(canonical))
+    mapped = mapped[mapped["theme"] != ""].drop_duplicates(["movieId", "theme"])
     final, rescued = drop_rare(mapped, min_movies)
 
     after_mapping = mapped.groupby("theme")["movieId"].nunique()
@@ -99,6 +113,8 @@ def normalize(raw_pairs: pd.DataFrame, seeds: list[str], embedder, threshold: fl
         "raw_themes_exact_seed": int(method_counts.get("exact_seed", 0)),
         "raw_themes_mapped_by_embedding": int(method_counts.get("embedding", 0)),
         "raw_themes_kept_as_new": int(method_counts.get("kept_new", 0)),
+        "raw_themes_manual_override": int(method_counts.get("manual", 0)),
+        "raw_themes_blocked": int(method_counts.get("blocked", 0)),
         "distinct_after_mapping": int(after_mapping.size),
         "themes_dropped_as_rare": int((~after_mapping.index.isin(after_drop.index)).sum()),
         "movies_rescued": rescued,

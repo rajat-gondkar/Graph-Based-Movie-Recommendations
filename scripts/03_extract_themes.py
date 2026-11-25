@@ -17,7 +17,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # make config and src importable
 
@@ -27,19 +26,8 @@ from src import llm_client  # noqa: E402
 from src import theme_extraction as te  # noqa: E402
 from src.cache import load_json  # noqa: E402
 
-MODELS_URL = "https://openrouter.ai/api/v1/models"  # public model list with prices (no key needed)
 EST_OUTPUT_TOKENS = 40                              # a JSON list of 3-5 short themes
 STATS_PATH = config.RESULTS_DIR / "theme_extraction_stats.json"
-
-
-def model_prices(model: str) -> tuple[float, float] | None:
-    """(USD per prompt token, USD per completion token) from OpenRouter's public list, or None."""
-    try:
-        models = requests.get(MODELS_URL, timeout=15).json()["data"]
-        pricing = next(m for m in models if m["id"] == model)["pricing"]
-        return float(pricing["prompt"]), float(pricing["completion"])
-    except Exception:  # offline, renamed model, or a format change: just skip the estimate
-        return None
 
 
 def print_estimate(todo: pd.DataFrame, tag_map: dict, model: str) -> None:
@@ -50,16 +38,16 @@ def print_estimate(todo: pd.DataFrame, tag_map: dict, model: str) -> None:
         for msg in te.build_messages(movie, tag_map.get(int(movie["movieId"]), []))
     )
     tokens_in, tokens_out = chars / 4, EST_OUTPUT_TOKENS * len(todo)
-    print(f"  model: {model}")
+    print(f"  provider: {llm_client.provider_name()}, model: {model}")
     print(f"  planned LLM calls: {len(todo):,} (up to {2 * len(todo):,} if every reply needs its one retry)")
     print(f"  rough tokens: ~{tokens_in:,.0f} in, ~{tokens_out:,.0f} out, plus any hidden reasoning tokens")
-    prices = model_prices(model)
+    prices = llm_client.model_prices()
     if prices:
         cost = tokens_in * prices[0] + tokens_out * prices[1]
         print(f"  rough cost at list prices: ~${cost:.3f} "
               f"(${prices[0] * 1e6:.2f} in / ${prices[1] * 1e6:.2f} out per 1M tokens)")
     else:
-        print("  rough cost: unavailable (couldn't read OpenRouter's price list)")
+        print("  rough cost: unavailable (couldn't read the provider's price list)")
     if model.endswith(":free"):
         print("  Note: free models allow 50 requests a day (1,000 after buying $10+ of credits).")
 
