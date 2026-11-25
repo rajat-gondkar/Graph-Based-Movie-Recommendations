@@ -1,0 +1,41 @@
+Received notification from DBMS server: <GqlStatusObject gql_status='01N50', status_description='warn: label does not exist. The label `Meta` does not exist. Verify that the spelling is correct.', position=<SummaryInputPosition line=1, column=10, offset=9>, raw_classification='UNRECOGNIZED', classification=<NotificationClassification.UNRECOGNIZED: 'UNRECOGNIZED'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'UNRECOGNIZED', '_severity': 'WARNING', '_position': {'offset': 9, 'line': 1, 'column': 10}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: 'MATCH (m:Meta) RETURN m.mode AS mode LIMIT 1'
+Received notification from DBMS server: <GqlStatusObject gql_status='01N52', status_description='warn: property key does not exist. The property `mode` does not exist. Verify that the spelling is correct.', position=<SummaryInputPosition line=1, column=25, offset=24>, raw_classification='UNRECOGNIZED', classification=<NotificationClassification.UNRECOGNIZED: 'UNRECOGNIZED'>, raw_severity='WARNING', severity=<NotificationSeverity.WARNING: 'WARNING'>, diagnostic_record={'_classification': 'UNRECOGNIZED', '_severity': 'WARNING', '_position': {'offset': 24, 'line': 1, 'column': 25}, 'OPERATION': '', 'OPERATION_CODE': '0', 'CURRENT_SCHEMA': '/'}> for query: 'MATCH (m:Meta) RETURN m.mode AS mode LIMIT 1'
+[1/6] Reading processed files (mode: full)
+  2,426 movies, 80 themes (9,309 movie-theme pairs), 18 genres (6,413 pairs), 999 users, 125,609 ratings
+[2/6] Wiping the database
+[3/6] Creating constraints
+[4/6] Loading movies, genres, themes, users and ratings in batches of 1000
+[5/6] Computing ratingCount, avgRating, movieCount and idf
+[6/6] Checking the graph against the input files
+
+Nodes:
+  Genre          18
+  Meta            1
+  Movie       2,426
+  Theme          80
+  User          999
+Relationships:
+  HAS_GENRE     6,413
+  HAS_THEME     9,309
+  RATED       125,609
+
+Checks:
+  [ok] Movie nodes = movies with themes
+  [ok] Theme nodes = distinct themes
+  [ok] Genre nodes = distinct genres
+  [ok] User nodes = distinct rating users
+  [ok] HAS_THEME edges = movie-theme pairs
+  [ok] HAS_GENRE edges = movie-genre pairs
+  [ok] RATED edges = loaded ratings
+  [ok] Every movie has a theme
+  [ok] Every theme has an idf
+
+Most common themes (lowest idf): identity (736 movies, idf 1.19), obsession (595 movies, idf 1.41), survival (541 movies, idf 1.50), underdog triumph (444 movies, idf 1.70), family conflict (437 movies, idf 1.71)
+Rarest themes (highest idf):     duty and retirement (1, idf 7.79), consumerism (3, idf 6.70), first love (3, idf 6.70), free will (3, idf 6.70), imagination (3, idf 6.70)
+
+Wrote results/graph_stats.json; load 8.6 s, total 11.3 s
+
+Try these in the Neo4j browser (http://localhost:7474):
+  MATCH (m:Movie)-[:HAS_THEME]->(t:Theme) RETURN m, t LIMIT 50
+  MATCH (m:Movie {title: 'The Matrix'})-[r]->(x) RETURN m, r, x
+  MATCH (t:Theme) RETURN t.name, t.movieCount, t.idf ORDER BY t.idf DESC LIMIT 10

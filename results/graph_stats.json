@@ -1,0 +1,73 @@
+{
+  "mode": "full",
+  "total_movies": 2426,
+  "nodes": {
+    "Genre": 18,
+    "Meta": 1,
+    "Movie": 2426,
+    "Theme": 80,
+    "User": 999
+  },
+  "relationships": {
+    "HAS_GENRE": 6413,
+    "HAS_THEME": 9309,
+    "RATED": 125609
+  },
+  "checks_passed": true,
+  "load_seconds": 5.6,
+  "total_seconds": 7.3,
+  "most_common_themes": [
+    [
+      "identity",
+      736,
+      1.1927689707751192
+    ],
+    [
+      "obsession",
+      595,
+      1.4054376839583655
+    ],
+    [
+      "survival",
+      541,
+      1.500579810657514
+    ],
+    [
+      "underdog triumph",
+      444,
+      1.6981745270717707
+    ],
+    [
+      "family conflict",
+      437,
+      1.7140658944084053
+    ]
+  ],
+  "rarest_themes": [
+    [
+      "duty and retirement",
+      1,
+      7.793999089503996
+    ],
+    [
+      "consumerism",
+      3,
+      6.695386800835886
+    ],
+    [
+      "first love",
+      3,
+      6.695386800835886
+    ],
+    [
+      "free will",
+      3,
+      6.695386800835886
+    ],
+    [
+      "imagination",
+      3,
+      6.695386800835886
+    ]
+  ]
+}
