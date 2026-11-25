@@ -19,9 +19,9 @@ WHERE r.rating >= $like_threshold AND seen <> rec
 WITH t, seen, r
 ORDER BY r.rating DESC, seen.ratingCount DESC, seen.movieId
 WITH t, collect({title: seen.title, year: seen.year, rating: r.rating}) AS liked, sum(r.rating - 3.0) AS affinity
-RETURN t.name AS theme, affinity * t.idf AS contribution, size(liked) AS likedCount, liked[..3] AS liked
+RETURN t.name AS theme, affinity * t.idf AS contribution, size(liked) AS likedCount, liked[..$max_liked] AS liked
 ORDER BY contribution DESC, theme
-LIMIT 3
+LIMIT $max_themes
 """
 
 SHARED_GENRES_QUERY = """
@@ -53,7 +53,7 @@ def evidence(user_id: int, movie_id: int) -> dict:
     movie = _read(MOVIE_QUERY, mid=movie_id)
     if not movie:
         raise ValueError(f"Movie {movie_id} is not in the graph.")
-    rows = _read(EVIDENCE_QUERY, **params)
+    rows = _read(EVIDENCE_QUERY, **params, max_themes=config.EVIDENCE_MAX_THEMES, max_liked=config.EVIDENCE_MAX_LIKED)
     year = movie[0]["year"]
     return {
         "recommended": {"title": display_title(movie[0]["title"], year), "year": int(year) if year else None},

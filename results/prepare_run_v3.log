@@ -1,0 +1,21 @@
+[1/4] MovieLens files
+  MovieLens already present in /Users/rajat.gondkar/Desktop/COE/movie-kg-recsys/data/raw/ml-32m
+  raw: 87,585 movies listed (84,432 rated), 200,948 users, 32,000,204 ratings, 2,000,072 tags
+[2/4] Sampling: top 2500 movies by rating count (with a tmdbId) plus films from 2015 on with >= 50 ratings, 3000 random users active since 2019-01-01 (seed 42), then movies >= 10 and users >= 20 ratings inside the sample
+  top movies: 2,500 (the last one has 2,485 ratings overall); recent films added: 2,632; users active since 2019-01-01: 36,263; eligible users: 35,709 of 200,948; sampled: 3,000
+  kept: 3,864 movies, 2,999 users, 618,938 ratings (density 0.053)
+[3/4] Train/test split: latest 20% of each user's ratings go to test
+  train: 495,170 ratings | test: 123,768 ratings (57,359 relevant, rating >= 4.0)
+  users with at least one relevant test item: 2,955 of 2,999
+[4/4] Writing files
+  wrote data/processed/movies_base.csv (3,864 rows)
+  wrote data/processed/train.csv (495,170 rows)
+  wrote data/processed/test.csv (123,768 rows)
+  wrote results/dataset_stats.json
+  title cleaning examples:
+    'American President, The (1995)' -> 'The American President' (1995)
+    'City of Lost Children, The (Cité des enfants perdus, La) (1995)' -> 'The City of Lost Children' (1995)
+    'Twelve Monkeys (a.k.a. 12 Monkeys) (1995)' -> 'Twelve Monkeys' (1995)
+    'Seven (a.k.a. Se7en) (1995)' -> 'Seven' (1995)
+    'Usual Suspects, The (1995)' -> 'The Usual Suspects' (1995)
+Done in 9.6 s

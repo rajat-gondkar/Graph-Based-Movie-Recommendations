@@ -101,13 +101,20 @@ def sample_subset(
     min_movie_ratings: int,
     min_user_ratings: int,
     seed: int = config.RANDOM_SEED,
+    movies: pd.DataFrame | None = None,
+    recent_since: int | None = None,
+    recent_min_ratings: int | None = None,
+    active_since: str | None = None,
 ) -> tuple[pd.DataFrame, dict]:
-    """Shrink a big MovieLens table to demo size (D37). Returns (ratings, funnel counts for the report).
+    """Shrink a big MovieLens table to demo size (D37, D44). Returns (ratings, funnel counts for the report).
 
     1. keep the `max_movies` most-rated movies that have a tmdbId (ties broken by movieId);
-    2. among users with >= min_user_ratings ratings on those movies, draw `n_users` at random (fixed seed);
+       D44: also keep films released in or after `recent_since` with >= `recent_min_ratings` ratings
+       (needs `movies` for the release years);
+    2. D44: if `active_since` is set, only users with a rating on or after that date can be sampled;
+       among users with >= min_user_ratings ratings on the kept movies, draw `n_users` at random (fixed seed);
     3. apply the usual filters inside that sample: movies >= min_movie_ratings, then users >= min_user_ratings.
-    None for max_movies or n_users means "no limit".
+    None for max_movies or n_users means "no limit"; None for the D44 arguments switches that step off.
     """
     funnel = {}
     with_tmdb = set(links.loc[links["tmdbId"].notna(), "movieId"])
@@ -117,8 +124,20 @@ def sample_subset(
     top = counts if max_movies is None else counts.head(max_movies)
     funnel["top_movies_kept"] = len(top)
     funnel["rating_count_of_last_top_movie"] = int(top["n"].min())
+    if recent_since is not None and movies is not None:
+        years = movies.set_index("movieId")["title"].map(lambda t: parse_title(t)[1])
+        recent = counts[(counts["movieId"].map(years) >= recent_since) & (counts["n"] >= (recent_min_ratings or 1))]
+        extra = recent[~recent["movieId"].isin(set(top["movieId"]))]
+        funnel["recent_movies_added"] = len(extra)
+        top = pd.concat([top, extra])
+    funnel["candidate_movies"] = len(top)
     on_top = ratings[ratings["movieId"].isin(set(top["movieId"]))]
     funnel["ratings_on_top_movies"] = len(on_top)
+    if active_since is not None:
+        cutoff = pd.Timestamp(active_since, tz="UTC").timestamp()
+        active = set(ratings.loc[ratings["timestamp"] >= cutoff, "userId"].unique())
+        funnel["users_active_since"] = len(active)
+        on_top = on_top[on_top["userId"].isin(active)]
 
     per_user = on_top.groupby("userId").size()
     eligible = np.sort(per_user[per_user >= min_user_ratings].index.to_numpy())

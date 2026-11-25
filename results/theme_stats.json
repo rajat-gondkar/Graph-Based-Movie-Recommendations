@@ -3,22 +3,22 @@
   "embedding_model": "all-MiniLM-L6-v2",
   "similarity_threshold": 0.75,
   "min_movies_per_theme": 3,
-  "movies": 2426,
-  "raw_pairs": 9523,
-  "distinct_raw_themes": 238,
+  "movies": 3843,
+  "raw_pairs": 15155,
+  "distinct_raw_themes": 352,
   "raw_themes_exact_seed": 50,
-  "raw_themes_mapped_by_embedding": 10,
-  "raw_themes_kept_as_new": 170,
-  "raw_themes_manual_override": 6,
-  "raw_themes_blocked": 2,
-  "distinct_after_mapping": 221,
-  "themes_dropped_as_rare": 141,
-  "movies_rescued": 1,
-  "distinct_final_themes": 80,
-  "final_pairs": 9309,
-  "movies_with_themes": 2426,
+  "raw_themes_mapped_by_embedding": 15,
+  "raw_themes_kept_as_new": 276,
+  "raw_themes_manual_override": 8,
+  "raw_themes_blocked": 3,
+  "distinct_after_mapping": 327,
+  "themes_dropped_as_rare": 232,
+  "movies_rescued": 3,
+  "distinct_final_themes": 95,
+  "final_pairs": 14810,
+  "movies_with_themes": 3843,
   "themes_per_movie": {
-    "mean": 3.84,
+    "mean": 3.85,
     "min": 1,
     "max": 5
   },
@@ -26,16 +26,24 @@
   "seed_themes_unused": [],
   "new_themes_kept": [
     "aging",
+    "alien invasion",
     "alienation",
     "ambition",
+    "brother-brother relationship",
     "brotherhood",
     "bullying",
     "consumerism",
+    "courage",
+    "culture clash",
+    "danger",
     "destiny",
+    "duty",
     "duty and retirement",
     "existentialism",
+    "father daughter relationship",
     "father-son relationship",
     "first love",
+    "forgiveness",
     "free will",
     "greed",
     "guilt",
@@ -47,95 +55,102 @@
     "midlife crisis",
     "mortality",
     "motherhood",
+    "odd couple",
     "paranoia",
+    "parenting",
+    "perseverance",
+    "personal growth",
     "poverty",
     "rebellion",
+    "regret",
     "relationships",
     "religion",
-    "revolution",
+    "resilience",
     "rivalry",
-    "tragedy"
+    "social commentary",
+    "tragedy",
+    "unrequited love"
   ],
   "top20": [
     [
       "identity",
-      736
-    ],
-    [
-      "obsession",
-      595
+      1146
     ],
     [
       "survival",
-      541
+      936
     ],
     [
-      "underdog triumph",
-      444
+      "obsession",
+      922
     ],
     [
       "family conflict",
-      437
+      787
     ],
     [
-      "friendship",
-      384
+      "underdog triumph",
+      675
     ],
     [
       "moral dilemma",
-      378
+      626
     ],
     [
-      "second chances",
-      348
-    ],
-    [
-      "deception",
-      348
-    ],
-    [
-      "good vs evil",
-      345
+      "friendship",
+      597
     ],
     [
       "loss and grief",
-      318
+      582
+    ],
+    [
+      "second chances",
+      533
+    ],
+    [
+      "deception",
+      506
+    ],
+    [
+      "good vs evil",
+      478
     ],
     [
       "justice",
-      293
+      441
     ],
     [
       "loyalty",
-      287
-    ],
-    [
-      "quest",
-      239
+      420
     ],
     [
       "power and politics",
-      235
-    ],
-    [
-      "redemption",
-      223
+      376
     ],
     [
       "coming of age",
-      222
+      347
+    ],
+    [
+      "redemption",
+      334
+    ],
+    [
+      "quest",
+      332
     ],
     [
       "corruption",
-      199
-    ],
-    [
-      "sacrifice",
-      190
+      314
     ],
     [
       "isolation",
-      182
+      312
+    ],
+    [
+      "sacrifice",
+      290
     ]
   ]
 }

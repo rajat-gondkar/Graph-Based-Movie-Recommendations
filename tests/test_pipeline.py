@@ -94,7 +94,8 @@ def test_idf_and_rating_stats(driver, data):
 @pytest.fixture(scope="module")
 def sample_users(driver):
     rows = recommender._read("MATCH (u:User) WHERE u.userId > 0 RETURN u.userId AS id ORDER BY id")
-    return [r["id"] for r in rows][::50]                                # 20 users spread over the id range
+    ids = [r["id"] for r in rows]
+    return ids[::max(1, len(ids) // 20)][:20]                           # 20 users spread over the id range
 
 
 def test_recommendations_are_valid(sample_users):
@@ -141,11 +142,26 @@ def test_evidence_is_true_in_the_graph(sample_users):
         assert ev["evidence"][0]["theme"] in text and ev["recommended"]["title"] in text
 
 
-def test_cached_llm_explanations_need_no_calls(driver):
-    recs = recommender.recommend(877, k=10)
-    results = explainer.explain_many(877, recs, mode="llm")            # no_llm fixture fails on any call
-    assert all(r["source"] == "cache" for r in results)
-    assert explainer.last_batch_stats()["llm_calls"] == 0
+def test_explanation_cache_avoids_repeat_calls(sample_users, monkeypatch, tmp_path):
+    """First run calls the (stubbed) LLM once per film; the second run is served entirely from the cache."""
+    monkeypatch.setattr(config, "EXPLANATIONS_CACHE_PATH", tmp_path / "explanations.json")
+    monkeypatch.setattr(llm_client, "chat", lambda *a, **k: "Stub explanation.")
+    uid = sample_users[0]
+    recs = recommender.recommend(uid, k=5)
+    first = explainer.explain_many(uid, recs, mode="llm")
+    assert explainer.last_batch_stats()["llm_calls"] == 5 and all(r["source"] == "llm" for r in first)
+    second = explainer.explain_many(uid, recs, mode="llm")
+    assert explainer.last_batch_stats()["llm_calls"] == 0 and all(r["source"] == "cache" for r in second)
+
+
+def test_evidence_lists_up_to_the_configured_themes(sample_users):
+    for uid in sample_users[:5]:
+        rec = recommender.recommend(uid, k=1)[0]
+        ev = explainer.evidence(uid, rec["movieId"])
+        assert 1 <= len(ev["evidence"]) <= config.EVIDENCE_MAX_THEMES
+        assert all(len(e["because_you_liked"]) <= config.EVIDENCE_MAX_LIKED for e in ev["evidence"])
+        shared = {t["theme"] for t in rec["matchedThemes"]}
+        assert len(ev["evidence"]) == min(len(shared), config.EVIDENCE_MAX_THEMES)
 
 
 def _temp_users() -> int:

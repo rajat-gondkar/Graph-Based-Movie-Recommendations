@@ -1,0 +1,53 @@
+[1/4] Loaded 15,155 (movie, theme) pairs: 3,843 movies, 352 distinct raw themes
+[2/4] Mapping to seed themes: exact matches, then all-MiniLM-L6-v2 cosine similarity >= 0.75
+  50 raw themes match a seed exactly, 15 mapped by embedding, 276 kept as new themes, 8 manual overrides, 3 blocked
+    review: 'adventure' -> '(dropped)' (blocked)
+    review: 'ambition' -> 'ambition' (manual)
+    review: 'crime' -> '(dropped)' (blocked)
+    review: 'madness' -> 'mental illness' (manual)
+    review: 'morality' -> 'moral dilemma' (manual)
+    review: 'obsessive love' -> 'obsession' (manual)
+    review: 'revenger' -> 'revenge' (manual)
+    review: 'revengue' -> 'revenge' (manual)
+    review: 'revolution' -> 'rebellion' (manual)
+    review: 'romance' -> '(dropped)' (blocked)
+    review: 'vengeance' -> 'revenge' (manual)
+    'obsessions' -> 'obsession' (similarity 0.92)
+    'mentorship' -> 'mentor and student' (similarity 0.86)
+    'corporate corruption' -> 'corruption' (similarity 0.86)
+    'grief' -> 'loss and grief' (similarity 0.86)
+    'prejudice' -> 'racism and prejudice' (similarity 0.84)
+    'immigrant' -> 'immigration' (similarity 0.82)
+    'grief and healing' -> 'loss and grief' (similarity 0.81)
+    'loyalties' -> 'loyalty' (similarity 0.80)
+[3/4] Dropping themes used by fewer than 3 movies
+  327 themes after mapping, 232 dropped as rare; 3 movies kept their most common theme so none is left without one
+[4/4] Writing files
+  wrote data/processed/movie_themes.csv
+  wrote data/processed/theme_mapping.csv
+  wrote results/theme_stats.json
+  wrote results/theme_frequency.png
+
+Top 20 themes (movies):
+   1. identity                   1146
+   2. survival                    936
+   3. obsession                   922
+   4. family conflict             787
+   5. underdog triumph            675
+   6. moral dilemma               626
+   7. friendship                  597
+   8. loss and grief              582
+   9. second chances              533
+  10. deception                   506
+  11. good vs evil                478
+  12. justice                     441
+  13. loyalty                     420
+  14. power and politics          376
+  15. coming of age               347
+  16. redemption                  334
+  17. quest                       332
+  18. corruption                  314
+  19. isolation                   312
+  20. sacrifice                   290
+
+Distinct themes: 95 (within the healthy range of 50-150); 3,843 movies, 3.85 themes per movie on average

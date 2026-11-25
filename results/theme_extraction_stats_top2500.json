@@ -1,0 +1,27 @@
+{
+  "updated_utc": "2026-10-16 00:33:31",
+  "models": [
+    "google/gemini-3.5-flash-lite"
+  ],
+  "movies_with_plot": 2426,
+  "movies_ok": 2426,
+  "movies_invalid_output": 0,
+  "movies_not_done": 0,
+  "movies_needing_retry": 0,
+  "raw_pairs": 9523,
+  "distinct_raw_themes": 238,
+  "share_of_labels_from_seed_list": 0.953,
+  "themes_per_movie": {
+    "mean": 3.93,
+    "min": 1,
+    "max": 5
+  },
+  "usage_all_runs": {
+    "calls": 2428,
+    "prompt_tokens": 945530,
+    "completion_tokens": 45962,
+    "reasoning_tokens": 0,
+    "cost_usd": 0.398564
+  },
+  "last_run": null
+}

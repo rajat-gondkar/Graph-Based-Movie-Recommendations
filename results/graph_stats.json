@@ -1,73 +1,73 @@
 {
   "mode": "full",
-  "total_movies": 2426,
+  "total_movies": 3843,
   "nodes": {
     "Genre": 18,
     "Meta": 1,
-    "Movie": 2426,
-    "Theme": 80,
-    "User": 999
+    "Movie": 3843,
+    "Theme": 95,
+    "User": 2999
   },
   "relationships": {
-    "HAS_GENRE": 6413,
-    "HAS_THEME": 9309,
-    "RATED": 125609
+    "HAS_GENRE": 9464,
+    "HAS_THEME": 14810,
+    "RATED": 617003
   },
   "checks_passed": true,
-  "load_seconds": 5.6,
-  "total_seconds": 7.3,
+  "load_seconds": 31.1,
+  "total_seconds": 36.1,
   "most_common_themes": [
     [
       "identity",
-      736,
-      1.1927689707751192
-    ],
-    [
-      "obsession",
-      595,
-      1.4054376839583655
+      1146,
+      1.209975693290159
     ],
     [
       "survival",
-      541,
-      1.500579810657514
+      936,
+      1.4123931140872519
     ],
     [
-      "underdog triumph",
-      444,
-      1.6981745270717707
+      "obsession",
+      922,
+      1.42746336700825
     ],
     [
       "family conflict",
-      437,
-      1.7140658944084053
+      787,
+      1.5857803421474408
+    ],
+    [
+      "underdog triumph",
+      675,
+      1.739295899692314
     ]
   ],
   "rarest_themes": [
     [
+      "danger",
+      1,
+      8.254008590564844
+    ],
+    [
       "duty and retirement",
       1,
-      7.793999089503996
+      8.254008590564844
     ],
     [
-      "consumerism",
-      3,
-      6.695386800835886
+      "odd couple",
+      1,
+      8.254008590564844
     ],
     [
-      "first love",
+      "alien invasion",
       3,
-      6.695386800835886
+      7.155396301896734
     ],
     [
-      "free will",
+      "brother-brother relationship",
       3,
-      6.695386800835886
-    ],
-    [
-      "imagination",
-      3,
-      6.695386800835886
+      7.155396301896734
     ]
   ]
 }

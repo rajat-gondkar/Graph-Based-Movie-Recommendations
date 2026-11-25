@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # make config and 
 import config  # noqa: E402
 from src import data_loading as dl  # noqa: E402
 
-COST_WARNING_MOVIES = 2500  # above this, theme extraction gets expensive (spec 5.2)
+COST_WARNING_MOVIES = 4000  # above this, theme extraction gets expensive (spec 5.2 said 2,500; raised in D44)
 
 
 def to_date(ts: int) -> str:
@@ -57,8 +57,15 @@ def main() -> None:
                         help="keep movies with at least this many ratings in the user sample (default %(default)s)")
     parser.add_argument("--min-user-ratings", type=int, default=config.MIN_RATINGS_PER_USER,
                         help="keep users with at least this many remaining ratings (default %(default)s)")
+    parser.add_argument("--recent-since", type=int, default=config.RECENT_SINCE_YEAR,
+                        help="also keep films from this year on with enough ratings (0 = off; default %(default)s)")
+    parser.add_argument("--recent-min-ratings", type=int, default=config.RECENT_MIN_RATINGS,
+                        help="ratings a recent film needs to be added (default %(default)s)")
+    parser.add_argument("--active-since", default=config.ACTIVE_USERS_SINCE,
+                        help='sample only users with a rating on or after this date ("" = off; default %(default)s)')
     args = parser.parse_args()
     max_movies, n_users = args.max_movies or None, args.users or None
+    recent_since, active_since = args.recent_since or None, args.active_since or None
     started = time.perf_counter()
 
     print("[1/4] MovieLens files")
@@ -67,16 +74,21 @@ def main() -> None:
     print(f"  raw: {len(raw['movies']):,} movies listed ({raw_stats['movies']:,} rated), "
           f"{raw_stats['users']:,} users, {raw_stats['ratings']:,} ratings, {len(raw['tags']):,} tags")
 
-    print(f"[2/4] Sampling: top {max_movies or 'all'} movies by rating count (with a tmdbId), "
-          f"{n_users or 'all eligible'} random users (seed {config.RANDOM_SEED}), then movies >= "
+    recent = (f" plus films from {recent_since} on with >= {args.recent_min_ratings} ratings" if recent_since else "")
+    active = f" active since {active_since}" if active_since else ""
+    print(f"[2/4] Sampling: top {max_movies or 'all'} movies by rating count (with a tmdbId){recent}, "
+          f"{n_users or 'all eligible'} random users{active} (seed {config.RANDOM_SEED}), then movies >= "
           f"{args.min_movie_ratings} and users >= {args.min_user_ratings} ratings inside the sample")
     ratings, funnel = dl.sample_subset(raw["ratings"], raw["links"], max_movies, n_users,
-                                       args.min_movie_ratings, args.min_user_ratings)
+                                       args.min_movie_ratings, args.min_user_ratings, movies=raw["movies"],
+                                       recent_since=recent_since, recent_min_ratings=args.recent_min_ratings,
+                                       active_since=active_since)
     movies = dl.build_movies_base(raw["movies"], raw["links"], ratings["movieId"].unique())
     kept = dl.rating_stats(ratings)
     print(f"  top movies: {funnel['top_movies_kept']:,} (the last one has {funnel['rating_count_of_last_top_movie']:,} "
-          f"ratings overall); eligible users: {funnel['users_eligible']:,} of {funnel['users_total']:,}; "
-          f"sampled: {funnel['users_sampled']:,}")
+          f"ratings overall); recent films added: {funnel.get('recent_movies_added', 0):,}; "
+          f"users active since {active_since or 'any time'}: {funnel.get('users_active_since', funnel['users_total']):,}; "
+          f"eligible users: {funnel['users_eligible']:,} of {funnel['users_total']:,}; sampled: {funnel['users_sampled']:,}")
     print(f"  kept: {kept['movies']:,} movies, {kept['users']:,} users, {kept['ratings']:,} ratings "
           f"(density {kept['density']:.3f})")
     if kept["movies"] > COST_WARNING_MOVIES:
@@ -104,6 +116,9 @@ def main() -> None:
         "thresholds": {
             "max_movies": max_movies,
             "sample_users": n_users,
+            "recent_since_year": recent_since,
+            "recent_min_ratings": args.recent_min_ratings if recent_since else None,
+            "active_users_since": active_since,
             "random_seed": config.RANDOM_SEED,
             "min_movie_ratings": args.min_movie_ratings,
             "min_user_ratings": args.min_user_ratings,

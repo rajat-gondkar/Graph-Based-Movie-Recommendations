@@ -1,0 +1,141 @@
+{
+  "used_embeddings": true,
+  "embedding_model": "all-MiniLM-L6-v2",
+  "similarity_threshold": 0.75,
+  "min_movies_per_theme": 3,
+  "movies": 2426,
+  "raw_pairs": 9523,
+  "distinct_raw_themes": 238,
+  "raw_themes_exact_seed": 50,
+  "raw_themes_mapped_by_embedding": 10,
+  "raw_themes_kept_as_new": 170,
+  "raw_themes_manual_override": 6,
+  "raw_themes_blocked": 2,
+  "distinct_after_mapping": 221,
+  "themes_dropped_as_rare": 141,
+  "movies_rescued": 1,
+  "distinct_final_themes": 80,
+  "final_pairs": 9309,
+  "movies_with_themes": 2426,
+  "themes_per_movie": {
+    "mean": 3.84,
+    "min": 1,
+    "max": 5
+  },
+  "seed_themes_used": 50,
+  "seed_themes_unused": [],
+  "new_themes_kept": [
+    "aging",
+    "alienation",
+    "ambition",
+    "brotherhood",
+    "bullying",
+    "consumerism",
+    "destiny",
+    "duty and retirement",
+    "existentialism",
+    "father-son relationship",
+    "first love",
+    "free will",
+    "greed",
+    "guilt",
+    "imagination",
+    "investigation",
+    "jealousy",
+    "love",
+    "magic",
+    "midlife crisis",
+    "mortality",
+    "motherhood",
+    "paranoia",
+    "poverty",
+    "rebellion",
+    "relationships",
+    "religion",
+    "revolution",
+    "rivalry",
+    "tragedy"
+  ],
+  "top20": [
+    [
+      "identity",
+      736
+    ],
+    [
+      "obsession",
+      595
+    ],
+    [
+      "survival",
+      541
+    ],
+    [
+      "underdog triumph",
+      444
+    ],
+    [
+      "family conflict",
+      437
+    ],
+    [
+      "friendship",
+      384
+    ],
+    [
+      "moral dilemma",
+      378
+    ],
+    [
+      "second chances",
+      348
+    ],
+    [
+      "deception",
+      348
+    ],
+    [
+      "good vs evil",
+      345
+    ],
+    [
+      "loss and grief",
+      318
+    ],
+    [
+      "justice",
+      293
+    ],
+    [
+      "loyalty",
+      287
+    ],
+    [
+      "quest",
+      239
+    ],
+    [
+      "power and politics",
+      235
+    ],
+    [
+      "redemption",
+      223
+    ],
+    [
+      "coming of age",
+      222
+    ],
+    [
+      "corruption",
+      199
+    ],
+    [
+      "sacrifice",
+      190
+    ],
+    [
+      "isolation",
+      182
+    ]
+  ]
+}

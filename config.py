@@ -48,7 +48,11 @@ MOVIELENS_URL = "https://files.grouplens.org/datasets/movielens/ml-32m.zip"   # 
 # Subsampling (D37): the MAX_MOVIES most-rated movies that have a tmdbId, then SAMPLE_USERS random users
 # (seed 42) with enough ratings on them, then the usual rating-count filters inside that sample.
 MAX_MOVIES = 2500               # keeps the LLM bill small (spec 5.2 warns above ~2,500 movies); None = no limit
-SAMPLE_USERS = 1000             # random users kept; None = all eligible users
+SAMPLE_USERS = 3000             # random users kept; None = all eligible users (1000 before D44)
+# D44 (dataset v3): add recent films and sample recently active users, so 2015-2023 films are well covered.
+RECENT_SINCE_YEAR = 2015        # films released in or after this year ...
+RECENT_MIN_RATINGS = 50         # ... with at least this many MovieLens ratings join the top MAX_MOVIES
+ACTIVE_USERS_SINCE = "2019-01-01"  # sample only users with at least one rating on or after this date
 MIN_RATINGS_PER_MOVIE = 10      # counted inside the user sample (small-dataset runs used 20, then 10)
 MIN_RATINGS_PER_USER = 20
 TEST_FRACTION = 0.2             # the latest 20% of each user's ratings go to the test set
@@ -64,6 +68,8 @@ ALPHA = 0.8                     # final = ALPHA * graph score + (1 - ALPHA) * po
 GENRE_WEIGHT = 0.3              # weight of the genre bonus inside the graph score
 MIN_CANDIDATE_RATINGS = 5       # candidate movies need at least this many ratings
 POOL_SIZE = 100                 # theme-matched candidates fetched before re-ranking
+EVIDENCE_MAX_THEMES = 5         # shared themes shown in an explanation (3 before D45; films have at most 5)
+EVIDENCE_MAX_LIKED = 3          # liked films listed per shared theme
 
 # ---------------------------------------------------------------------------
 # External services
@@ -91,9 +97,11 @@ THEME_OVERRIDES = {
     "morality": "moral dilemma",
     "obsessive love": "obsession",
     "ambition": "ambition",           # general ambition (power, career) is not "artistic ambition"
+    "madness": "mental illness",      # dataset v3 review (D46)
+    "revolution": "rebellion",        # dataset v3 review (D46)
 }
 # Genre words that duplicate HAS_GENRE edges (D17); dropped as themes.
-THEME_BLOCKLIST = {"romance", "adventure"}
+THEME_BLOCKLIST = {"romance", "adventure", "crime"}   # "crime" added in the dataset v3 review (D46)
 
 # Seed vocabulary (spec section 6.3). The LLM is told to prefer these so that movies share themes.
 # "fear of the unknown" is the only seed with 4 words; seed themes are always accepted as they are.

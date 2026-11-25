@@ -78,7 +78,7 @@ def main() -> None:
     print(f"[3/4] Dropping themes used by fewer than {args.min_movies} movies")
     rescued = stats["movies_rescued"]
     print(f"  {stats['distinct_after_mapping']} themes after mapping, {stats['themes_dropped_as_rare']} dropped as rare; "
-          f"{rescued} movie{'' if rescued == 1 else 's'} kept its most common theme so it isn't left with none")
+          f"{rescued} movie{' kept its' if rescued == 1 else 's kept their'} most common theme so none is left without one")
 
     print("[4/4] Writing files")
     final.to_csv(config.MOVIE_THEMES_PATH, index=False)

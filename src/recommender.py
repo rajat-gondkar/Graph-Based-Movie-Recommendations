@@ -5,8 +5,8 @@ graph_score = (theme_norm + GENRE_WEIGHT * genre_norm) / (1 + GENRE_WEIGHT)
 All three parts are min-max scaled over the candidate pool (1.0 when every value is equal).
 
 Command line:
-    python -m src.recommender --user 877
-    python -m src.recommender --user 877 --explain template --k 5 --alpha 1.0
+    python -m src.recommender --user 92
+    python -m src.recommender --user 92 --explain template --k 5 --alpha 1.0
     python -m src.recommender --ratings "1:5,260:5,1196:4,2571:5,4993:4"
 """
 import argparse
@@ -271,7 +271,7 @@ def _print_recs(recs: list[dict], explanations: list[dict] | None) -> None:
         if rec["filled"]:
             print(f"{i:>2}. {rec['displayTitle']} ({rec['year'] or '?'})  [popular fill-in, no theme path]")
         else:
-            themes = ", ".join(t["theme"] for t in rec["matchedThemes"][:3])
+            themes = ", ".join(t["theme"] for t in rec["matchedThemes"][:config.EVIDENCE_MAX_THEMES])
             print(f"{i:>2}. {rec['displayTitle']} ({rec['year'] or '?'})  score {rec['score']:.3f}  "
                   f"(graph {rec['graphScore']:.3f}, popularity {rec['popularity']:.3f})  themes: {themes}")
         if explanations:

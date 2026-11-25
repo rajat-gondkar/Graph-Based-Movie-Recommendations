@@ -84,7 +84,7 @@ def _card(rec: dict, exp: dict) -> dict:
         "movieId": rec["movieId"], "title": rec["displayTitle"], "year": _year(rec["year"]),
         "poster": poster_url(rec["posterPath"]), "score": rec["score"], "graphScore": rec["graphScore"],
         "popularity": rec["popularity"], "filled": rec["filled"],
-        "themes": [t["theme"] for t in rec["matchedThemes"][:3]],
+        "themes": [t["theme"] for t in rec["matchedThemes"][:config.EVIDENCE_MAX_THEMES]],
         "explanation": exp["text"], "source": exp["source"], "evidence": exp["evidence"],
     }
 

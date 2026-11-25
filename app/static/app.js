@@ -33,7 +33,7 @@
     liked: store.get("liked", []),
     k: store.get("k", 10),
     alpha: store.get("alpha", 0.8),
-    userId: store.get("userId", 877),
+    userId: store.get("userId", 92),
     view: "browse",
     browseBy: "genre",
     facet: "All",
@@ -228,7 +228,7 @@
     const head = `
       <div class="page-head">
         <h1>MovieLens user ${id}</h1>
-        <p class="lede">One of the 999 people in the dataset. These picks come from the films they rated four stars or more.</p>
+        <p class="lede">One of the ${state.users.length.toLocaleString()} people in the dataset. These picks come from the films they rated four stars or more.</p>
         <p class="stats" data-stats></p>
         <div data-favourites></div>
       </div>`;
@@ -524,7 +524,7 @@
       state.themes = counted(catalog, "themes");
       state.users = users;
       state.liked = state.liked.filter((id) => state.byId.has(id));
-      if (!users.includes(state.userId)) state.userId = users.includes(877) ? 877 : users[0];
+      if (!users.includes(state.userId)) state.userId = users.includes(92) ? 92 : users[0];
       if (status.graphMode !== "full") {
         document.querySelector(".shell").insertAdjacentHTML("beforebegin",
           `<div class="shell"><div class="banner" style="margin-top:var(--s5)">The graph holds training ratings only (eval mode). For the demo, rebuild it with <code>python scripts/05_build_graph.py --mode full --wipe</code>.</div></div>`);

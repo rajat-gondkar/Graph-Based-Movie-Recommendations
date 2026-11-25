@@ -12,6 +12,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+import config  # noqa: E402
+import pandas as pd  # noqa: E402
 from src import llm_client, recommender  # noqa: E402
 
 
@@ -47,10 +49,10 @@ def test_status_catalog_users(client):
     status = client.get("/api/status").json()
     assert status["graphMode"] == "full" and status["minLikes"] == 3
     catalog = client.get("/api/catalog").json()
-    assert len(catalog) == 2426
+    assert len(catalog) == pd.read_csv(config.MOVIE_THEMES_PATH).movieId.nunique()
     assert {"id", "title", "year", "poster", "n", "avg", "genres", "themes"} <= set(catalog[0])
     assert all(m["themes"] for m in catalog)
-    assert len(client.get("/api/users").json()) == 999
+    assert len(client.get("/api/users").json()) == pd.read_csv(config.TRAIN_PATH).userId.nunique()
 
 
 def test_validation(client):
@@ -58,14 +60,18 @@ def test_validation(client):
     assert client.post("/api/recommend", json={"liked": [1, 2, 999999999]}).status_code == 422  # unknown id
     assert client.post("/api/recommend", json={"liked": [1, 2, 3], "alpha": 2}).status_code == 422
     assert client.get("/api/users/1/recommend").status_code == 404
-    assert client.get("/api/users/877/recommend?k=99").status_code == 422
+    user = client.get("/api/users").json()[0]
+    assert client.get(f"/api/users/{user}/recommend?k=99").status_code == 422
 
 
-def test_user_recommendations_from_cache(client):
-    data = client.get("/api/users/877/recommend?k=10&alpha=0.8").json()
+def test_user_recommendations(client, monkeypatch, tmp_path):
+    monkeypatch.setattr(config, "EXPLANATIONS_CACHE_PATH", tmp_path / "explanations.json")
+    monkeypatch.setattr(llm_client, "chat", lambda *a, **k: "Stub explanation.")
+    user = client.get("/api/users").json()[0]
+    data = client.get(f"/api/users/{user}/recommend?k=10&alpha=0.8").json()
     recs = data["recommendations"]
-    assert len(recs) == 10 and all(r["source"] == "cache" for r in recs)   # explained in Phase 4, no new calls
-    assert recs[0]["evidence"]["evidence"] and recs[0]["themes"]
+    assert len(recs) == 10 and all(r["source"] == "llm" and r["explanation"] for r in recs)
+    assert recs[0]["evidence"]["evidence"] and 1 <= len(recs[0]["themes"]) <= config.EVIDENCE_MAX_THEMES
     assert len(data["topRated"]) == 8 and data["profile"]["themes"]
 
 
